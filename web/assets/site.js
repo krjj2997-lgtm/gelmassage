@@ -1,19 +1,13 @@
 (function () {
-  var loginLink = document.getElementById("header-login");
   var menuLogin = document.getElementById("menu-login");
-  if (loginLink) {
+  if (menuLogin) {
     fetch("/api/account", { credentials: "same-origin" }).then(function (response) {
       if (!response.ok) return null;
       return response.json();
     }).then(function (account) {
       if (!account || !account.login) return;
-      loginLink.textContent = "계정";
-      loginLink.setAttribute("href", "/account/");
-      loginLink.setAttribute("aria-label", "관리자 계정");
-      if (menuLogin) {
-        menuLogin.textContent = "계정";
-        menuLogin.setAttribute("href", "/account/");
-      }
+      menuLogin.textContent = "계정";
+      menuLogin.setAttribute("href", "/account/");
     }).catch(function () {});
   }
 
@@ -269,6 +263,19 @@
     }
     if (page === "region" || page === "all") apply(false);
   }
+
+  var inquiry = document.getElementById("inquiry-form");
+  if (inquiry) inquiry.addEventListener("submit", function (event) {
+    event.preventDefault();
+    var shopName = (document.getElementById("shop-name").value || "").trim();
+    var region = (document.getElementById("shop-region").value || "").trim();
+    var phone = (document.getElementById("shop-phone").value || "").trim();
+    var note = (document.getElementById("shop-note").value || "").trim();
+    var body = "업체명: " + shopName + "\n지역: " + region + "\n연락처: " + phone + "\n내용: " + note;
+    var msg = document.getElementById("auth-msg");
+    if (msg) msg.textContent = "메일 앱이 열립니다.";
+    location.href = "mailto:krjj2997@gmail.com?subject=" + encodeURIComponent("콜건마 입점 문의") + "&body=" + encodeURIComponent(body);
+  });
 
   var menu = document.getElementById("side-menu");
   var backdrop = document.getElementById("nav-backdrop");

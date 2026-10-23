@@ -904,15 +904,15 @@ def region_options(active=""):
 
 
 def side_menu():
-    links = ['<a id="menu-login" href="/login/">로그인</a>', '<a href="/">홈</a>', '<a href="/all/">전체 업체</a>']
-    for name, slug in REGIONS:
-        if LOCATION_TREE and name not in LOCATION_TREE:
-            continue
-        links.append(f'<a href="/region/{slug}/">{escape(name)}</a>')
     return f"""<div class="nav-backdrop" id="nav-backdrop" hidden></div>
 <nav class="side-menu" id="side-menu" hidden aria-label="전체 메뉴">
   <p class="side-title">{BRAND}</p>
-  {''.join(links)}
+  <a id="menu-login" href="/login/">로그인</a>
+  <a href="/signup/">회원가입</a>
+  <hr class="menu-rule">
+  <a href="/inquiry/">입점 문의</a>
+  <a href="/notice/">공지사항</a>
+  <a href="/event/">이벤트</a>
 </nav>"""
 
 
@@ -991,7 +991,7 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
 {f'<meta property="og:image" content="{escape(og_image)}">' if og_image else ''}
 <meta name="twitter:card" content="{'summary_large_image' if og_image else 'summary'}">
 <link rel="icon" href="/assets/favicon.svg">
-<link rel="stylesheet" href="/assets/style.css?v=14">
+<link rel="stylesheet" href="/assets/style.css?v=15">
 {extra_head}
 {ld}
 </head>
@@ -1001,7 +1001,6 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
   <div class="header-content">
     <a class="logo" href="/">{LOGO}<span>{BRAND}</span></a>
     <div class="header-tools">
-      <a class="header-login" id="header-login" href="/login/">로그인</a>
       <button type="button" class="icon-btn" id="open-search" aria-label="검색 창으로 이동">{SEARCH_ICON}</button>
       <a class="icon-btn" id="header-map-btn" href="/nearby/" aria-label="내주변">{PIN_ICON}</a>
       <button type="button" class="icon-btn" id="open-menu" aria-label="전체 메뉴 열기" aria-controls="side-menu" aria-expanded="false">{MENU_ICON}</button>
@@ -1009,7 +1008,7 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
   </div>
 </header>
 {side_menu()}
-{"" if page in ("shop", "nearby", "login", "account") else finder_bar(page, region)}
+{"" if page in ("shop", "nearby", "login", "account", "signup", "inquiry", "notice", "event") else finder_bar(page, region)}
 {body}
 <footer class="foot">
   <div class="foot-inner">
@@ -1017,7 +1016,7 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
     <p>© {BRAND}</p>
   </div>
 </footer>
-<script src="/assets/site.js?v=8" defer></script>
+<script src="/assets/site.js?v=9" defer></script>
 </body>
 </html>
 """
@@ -1655,6 +1654,93 @@ def render_auth_pages():
     )
 
 
+def render_menu_pages():
+    pages = [
+        (
+            "signup",
+            "회원가입",
+            f"{BRAND} 회원가입",
+            "noindex,nofollow",
+            """<main id="main" class="auth-wrap">
+  <section class="auth-card">
+    <h1>회원가입</h1>
+    <p class="auth-lead">일반 회원 가입은 준비 중입니다. 지금은 등록된 관리자만 로그인할 수 있습니다.</p>
+    <p class="auth-lead">업체를 등록하려면 입점 문의로 남겨 주세요.</p>
+    <p><a class="auth-submit" href="/login/">로그인</a></p>
+    <p><a href="/inquiry/">입점 문의</a></p>
+  </section>
+</main>""",
+        ),
+        (
+            "inquiry",
+            "입점 문의",
+            f"{BRAND} 업체 입점 문의",
+            "index,follow",
+            """<main id="main" class="auth-wrap">
+  <form class="auth-card" id="inquiry-form">
+    <h1>입점 문의</h1>
+    <p class="auth-lead">업체명, 지역, 연락처를 남겨 주시면 메일로 이어집니다.</p>
+    <label for="shop-name">업체명</label>
+    <input id="shop-name" name="shopName" required>
+    <label for="shop-region">지역</label>
+    <input id="shop-region" name="region" required>
+    <label for="shop-phone">연락처</label>
+    <input id="shop-phone" name="phone" type="tel" required>
+    <label for="shop-note">문의 내용</label>
+    <textarea id="shop-note" name="note" rows="5" required></textarea>
+    <p class="auth-msg" id="auth-msg" role="status"></p>
+    <button class="auth-submit" type="submit">문의 보내기</button>
+  </form>
+</main>""",
+        ),
+        (
+            "notice",
+            "공지사항",
+            f"{BRAND} 공지사항",
+            "index,follow",
+            f"""<main id="main" class="auth-wrap">
+  <section class="auth-card">
+    <h1>공지사항</h1>
+    <article>
+      <h2>사이트 안내</h2>
+      <p>지역을 고르면 그 지역 업체가 나오고, 세부지역을 고르면 가까운 동네부터 정렬됩니다. 예약은 업체 상세의 전화번호로 확인해 주세요.</p>
+    </article>
+    <article>
+      <h2>이름 변경</h2>
+      <p>사이트 이름은 {BRAND}입니다.</p>
+    </article>
+  </section>
+</main>""",
+        ),
+        (
+            "event",
+            "이벤트",
+            f"{BRAND} 이벤트",
+            "index,follow",
+            """<main id="main" class="auth-wrap">
+  <section class="auth-card">
+    <h1>이벤트</h1>
+    <p class="auth-lead">진행 중인 이벤트가 없습니다. 새 소식이 있으면 이 페이지에 올립니다.</p>
+  </section>
+</main>""",
+        ),
+    ]
+    urls = []
+    for page, title, description, robots, body in pages:
+        html = page_shell(
+            f"{title} | {BRAND}",
+            description,
+            ORIGIN + f"/{page}/",
+            body,
+            robots=robots,
+            page=page,
+        )
+        write(os.path.join(OUT, page, "index.html"), html)
+        if robots.startswith("index"):
+            urls.append(ORIGIN + f"/{page}/")
+    return urls
+
+
 def render_404():
     body = f"""<main id="main" class="main-content">
     <h1>페이지를 찾지 못했습니다</h1>
@@ -1713,6 +1799,7 @@ def main():
     for shop in shops:
         urls.append(render_shop(shop))
     render_auth_pages()
+    urls.extend(render_menu_pages())
     render_404()
     sitemap = ["<?xml version=\"1.0\" encoding=\"UTF-8\"?>", '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
     for url in urls:
