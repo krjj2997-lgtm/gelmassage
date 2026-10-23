@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>내주변 지도 | 건마모아</title>
+<meta name="description" content="현재 위치에서 가까운 마사지 업체를 지도에서 찾아보세요. 건마모아">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#667eea">
+<link rel="canonical" href="https://outcallmassage.co.kr/nearby/">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="건마모아">
+<meta property="og:type" content="website">
+<meta property="og:title" content="내주변 지도 | 건마모아">
+<meta property="og:description" content="현재 위치에서 가까운 마사지 업체를 지도에서 찾아보세요. 건마모아">
+<meta property="og:url" content="https://outcallmassage.co.kr/nearby/">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="/assets/favicon.svg">
+<link rel="stylesheet" href="/assets/style.css?v=14">
+
+
+</head>
+<body data-page="nearby" data-region="">
+<a class="skip" href="#main">본문으로 건너뛰기</a>
+<header class="header" role="banner">
+  <div class="header-content">
+    <a class="logo" href="/"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><circle cx="16" cy="16" r="12" fill="none" stroke="#ffd700" stroke-width="3"/><circle cx="16" cy="16" r="5.5" fill="none" stroke="#ffd700" stroke-width="3"/></svg><span>건마모아</span></a>
+    <div class="header-tools">
+      <a class="header-login" id="header-login" href="/login/">로그인</a>
+      <button type="button" class="icon-btn" id="open-search" aria-label="검색 창으로 이동"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10" cy="10" r="6.25" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.2 15.2L21 21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      <a class="icon-btn" id="header-map-btn" href="/nearby/" aria-label="내주변"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg></a>
+      <button type="button" class="icon-btn" id="open-menu" aria-label="전체 메뉴 열기" aria-controls="side-menu" aria-expanded="false"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"/></svg></button>
+    </div>
+  </div>
+</header>
+<div class="nav-backdrop" id="nav-backdrop" hidden></div>
+<nav class="side-menu" id="side-menu" hidden aria-label="전체 메뉴">
+  <p class="side-title">건마모아</p>
+  <a id="menu-login" href="/login/">로그인</a><a href="/">홈</a><a href="/all/">전체 업체</a><a href="/region/seoul/">서울</a><a href="/region/gyeonggi/">경기</a><a href="/region/incheon/">인천</a><a href="/region/busan/">부산</a><a href="/region/daegu/">대구</a><a href="/region/daejeon/">대전</a><a href="/region/gwangju/">광주</a><a href="/region/ulsan/">울산</a><a href="/region/sejong/">세종</a><a href="/region/gangwon/">강원</a><a href="/region/chungbuk/">충북</a><a href="/region/chungnam/">충남</a><a href="/region/jeonbuk/">전북</a><a href="/region/jeonnam/">전남</a><a href="/region/gyeongbuk/">경북</a><a href="/region/gyeongnam/">경남</a><a href="/region/jeju/">제주</a><a href="/region/etc/">기타</a>
+</nav>
+
+<main id="main" class="nearby-wrap">
+  <p id="nearby-status" class="nearby-status"><span>지도를 준비하고 있습니다.</span><button type="button" id="nearby-gps">내 위치</button></p>
+  <nav class="nearby-cats" id="nearby-cats">
+    <button type="button" class="active" data-cat="">전체</button>
+    <button type="button" data-cat="shop">마사지</button>
+    <button type="button" data-cat="outcall">출장마사지</button>
+    <button type="button" data-cat="one">1인샵</button>
+    <button type="button" data-cat="home">홈케어</button>
+  </nav>
+  <div class="nearby-filters" id="nearby-radius">
+    <button type="button" class="active" data-km="0">전체</button>
+    <button type="button" data-km="1">1km</button>
+    <button type="button" data-km="3">3km</button>
+    <button type="button" data-km="5">5km</button>
+    <button type="button" data-km="10">10km</button>
+    <button type="button" id="nearby-theme-toggle">테마보기 <svg class="theme-caret" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" aria-hidden="true"><path fill="currentColor" d="M207 381.5L12.7 187.1c-9.4-9.4-9.4-24.6 0-33.9l22.7-22.7c9.4-9.4 24.5-9.4 33.9 0L224 284.5 378.7 130.5c9.4-9.3 24.5-9.3 33.9 0l22.7 22.7c9.4 9.4 9.4 24.6 0 33.9L241 381.5c-9.4 9.4-24.6 9.4-34 0z"/></svg></button>
+  </div>
+  <div class="nearby-themes" id="nearby-themes" hidden>
+    <div class="nearby-theme-grid">
+      <button type="button" class="active" data-theme="">전체</button>
+      <button type="button" data-theme="스웨디시">스웨디시</button>
+      <button type="button" data-theme="타이">타이마사지</button>
+      <button type="button" data-theme="아로마">아로마마사지</button>
+      <button type="button" data-theme="왁싱">왁싱</button>
+      <button type="button" data-theme="중국">중국마사지</button>
+      <button type="button" data-theme="발마사지">발마사지</button>
+      <button type="button" data-theme="스파">스파</button>
+    </div>
+  </div>
+  <div class="nearby-map-wrap">
+    <div id="nearby-map" role="region" aria-label="내 주변 지도"></div>
+    <div id="nearby-picker" class="nearby-picker" hidden>
+      <div class="nearby-picker-title">이 위치의 업체</div>
+      <div id="nearby-picker-list"></div>
+    </div>
+  </div>
+  <div class="nearby-healing">
+    <button type="button" class="healing-chip" id="nearby-healing" aria-pressed="false" aria-label="힐링샵만 보기">
+      <span class="healing-chip-label">힐링샵</span>
+      <span class="healing-switch" aria-hidden="true"><span class="healing-knob"></span></span>
+    </button>
+  </div>
+  <section id="nearby-list" class="nearby-list"></section>
+</main>
+<script src="/assets/nearby.js?v=9"></script>
+<footer class="foot">
+  <div class="foot-inner">
+    <p>건마모아는 지역별 마사지·출장 업체의 위치, 코스, 영업시간을 비교하는 안내 사이트입니다. 예약 전 전화로 시간을 확인해 주세요.</p>
+    <p>© 건마모아</p>
+  </div>
+</footer>
+<script src="/assets/site.js?v=8" defer></script>
+</body>
+</html>
