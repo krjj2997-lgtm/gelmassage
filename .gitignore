@@ -1,0 +1,6 @@
+node_modules/
+.wrangler/
+.dev.vars
+.admin-password.local
+__pycache__/
+*.pyc

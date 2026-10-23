@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://outcallmassage.co.kr/sitemap.xml

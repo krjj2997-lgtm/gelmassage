@@ -1,0 +1,18 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "gelmassage",
+  "compatibility_date": "2026-10-23",
+  "compatibility_flags": ["nodejs_compat"],
+  "pages_build_output_dir": "./site",
+  "observability": {
+    "enabled": true
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "gelmassage",
+      "database_id": "2ef25045-31af-4a36-9269-7823101de112",
+      "migrations_dir": "migrations"
+    }
+  ]
+}

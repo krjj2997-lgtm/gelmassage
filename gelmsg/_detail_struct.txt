@@ -1,0 +1,31 @@
+CLASSES:
+  bottomTel
+  col-lg-12 col-md-12 col-sm-12 col-xs-12 wrcontent
+  ft_info
+  hAddr
+  infowrap
+  login-info
+  tel-top
+  tel_bottom
+  tel_top
+IDS:
+og:title: 동대문.청량리1인샵 「 벨라 」한국인관리사 신규오픈 굿친절마인드 릴렉싱스웨디시 테라피 | 뉴마사지
+og:description: 동대문.청량리1인샵 〔 벨라 〕한국인관리사 신규오픈 굿친절마인드 릴렉싱스웨디시 테라피 - 샵제공사진 ♡ 뉴마사지
+og:url: https://www.newmsg.kr/market/55939
+예약 idx=397618
+ 벨라  - 동대문.청량리1인샵   </td> |         </tr> --> |  |         <!-- <tr> |           <td><i>예약</i></td>  |           <td class="tel-top"> <p class='tel_top'>  0 1 0 - 8 2 6 5 - 1 2 4 9 전화+문자  </p> </td> |         </tr> --> |  |  |         <!-- <tr> |           <td><i>종목</i></td>  |           <td>  </td> |  
+전화 idx=396315
+</div>    |         </h1> |          <p class="tel_top">  0 1 0 - 8 2 6 5 - 1 2 4 9 전화+문자  </p>   |     </div> |  |  |  |     <!-- 왼쪽박스 --> |     <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12 Top-common Top-left" style=" ">  |       <div class="Left-in" style=""> |  |         <table class="tb" styl
+연락 idx=-1
+주소 idx=396862
+</td> |       </tr>      |         <tr> |           <td><i>위치          </i></td> <!-- 주소 --> |           <td>서울특별시 동대문구 청량리동 235-6 (왕산로 239) / 동대문세무서 도보1분 / 청량리역 3번출구 도보4분</td> |         </tr> |  |  |          |               <tr> |                 <td><i> 신규 </i></td> |                 <td> 26-09-16 
+영업 idx=-1
+소개 idx=-1
+요금 idx=-1
+가격 idx=-1
+회원 idx=412540
+font-size:11pt;text-align:center; line-height:2.2;" align="center"><b>상처입은&nbsp;회원님들을&nbsp;치유하고자</b></p><p style="font-size:11pt;text-align:center; line-height:2.2;" align="center"><b>드디어&nbsp;청량리에&nbsp;왔습니다.</b></p><p style="font-size:11pt;text-align:center; line-height:2.2;" al
+pat <article[^>]*>(.*?)</article> -> False len=0
+pat id="bo_v"[^>]*>(.*?)</section> -> False len=0
+pat class="[^"]*view_content[^"]*"[^>]*>(.*? -> False len=0
+pat class="[^"]*content[^"]*"[^>]*>(.*?)</di -> True len=16312

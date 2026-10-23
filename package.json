@@ -1,0 +1,12 @@
+{
+  "name": "gelmassage",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler pages dev --port 8765",
+    "db:local": "wrangler d1 migrations apply gelmassage --local",
+    "db:remote": "wrangler d1 migrations apply gelmassage --remote"
+  },
+  "devDependencies": {
+    "wrangler": "^4"
+  }
+}
