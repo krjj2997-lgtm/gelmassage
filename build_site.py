@@ -1687,6 +1687,8 @@ def main():
     sitemap.append("</urlset>")
     write(os.path.join(OUT, "sitemap.xml"), "\n".join(sitemap) + "\n")
     write(os.path.join(OUT, "robots.txt"), "User-agent: *\nAllow: /\nSitemap: https://outcallmassage.co.kr/sitemap.xml\n")
+    write(os.path.join(OUT, "CNAME"), "outcallmassage.co.kr\n")
+    write(os.path.join(OUT, ".nojekyll"), "")
     headers = """/assets/*
   Cache-Control: public, max-age=604800
 /images/*
