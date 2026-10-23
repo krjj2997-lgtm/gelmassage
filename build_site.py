@@ -175,6 +175,12 @@ def region_from_text(text):
         ("경북", "경상북도"),
         ("경남", "경상남도"),
         ("제주", "제주"),
+        ("서울", "서울시"),
+        ("부산", "부산시"),
+        ("대구", "대구시"),
+        ("인천", "인천시"),
+        ("대전", "대전시"),
+        ("울산", "울산시"),
     )
     for name, token in rules:
         if token in raw:
@@ -216,9 +222,23 @@ def region_from_address(address):
     return region_from_text(raw)
 
 
+def region_from_title_places(title):
+    for part in title_place_parts(title):
+        if part in SEOUL:
+            return "서울"
+        if part in CITY:
+            return CITY[part]
+        base = re.sub(r"(시|군|구)$", "", part)
+        if base in SEOUL:
+            return "서울"
+        if base in CITY:
+            return CITY[base]
+    return ""
+
+
 def title_place_parts(title):
     head = (title or "").split("〔")[0].split("[")[0].split("｛")[0]
-    head = re.sub(r"(1인샵|2인샵|3인샵|홈케어|홈타이|1인홈|&홈)", " ", head)
+    head = re.sub(r"(1인홈케어|2인홈케어|3인홈케어|1인샵|2인샵|3인샵|홈케어|홈타이|1인홈|&홈)", " ", head)
     head = re.sub(r"[\.·]", " ", head)
     parts = []
     for part in head.split():
@@ -236,10 +256,14 @@ def admin_tokens(text):
     found = []
     chunks = [chunk for chunk in re.split(r"[\s/,·]+", text) if chunk]
     for chunk in chunks:
-        match = re.fullmatch(r"([가-힣]{1,10})(시|군|구|읍|면|동|리|역)", chunk)
+        road_dong = re.fullmatch(r"([가-힣]{2,12}로\d+가)", chunk)
+        if road_dong:
+            found.append((road_dong.group(1), "dong"))
+            continue
+        match = re.fullmatch(r"([가-힣]{1,10})(시|군|구|읍|면|동|리|역)(\d+가)?", chunk)
         if not match:
             continue
-        name, kind = match.group(1), match.group(2)
+        name, kind, ga = match.group(1), match.group(2), match.group(3) or ""
         if kind == "리" and (name.endswith("사거") or chunk.endswith("사거리")):
             continue
         if kind == "시":
@@ -263,7 +287,7 @@ def admin_tokens(text):
         else:
             if len(name) < 1:
                 continue
-            found.append((name + kind, "dong"))
+            found.append((name + kind + ga, "dong"))
     return found
 
 
@@ -283,6 +307,13 @@ def choose_sub(region, tokens, title_parts):
         names = [name for name, token_kind in tokens if token_kind == kind]
         if names:
             return names[0]
+    for name, kind in tokens:
+        if kind != "dong":
+            continue
+        short = re.sub(r"\d+가$", "", name)
+        short = re.sub(r"(동|읍|면|리)$", "", short)
+        if len(short) >= 2 and short not in REGION_WORDS:
+            return short
     return "기타"
 
 
@@ -296,7 +327,7 @@ def choose_spots(sub, tokens, title_parts):
             continue
         label = part.replace("&", "")
         label = re.sub(r"(1인|2인|3인|샵|홈)$", "", label).strip()
-        if label in ("홈", "샵", "1인", "2인", "3인"):
+        if label in ("홈", "샵", "1인", "2인", "3인", "케어", "홈케어", "전지역", "관리", "방문"):
             continue
         if label in CITY or label in METRO_GU:
             continue
@@ -1055,6 +1086,8 @@ def build_shops():
                 if found:
                     region = found
                     break
+        if not region:
+            region = region_from_title_places(title)
         if not region:
             region = "기타"
         name = shop_name(title) or title
