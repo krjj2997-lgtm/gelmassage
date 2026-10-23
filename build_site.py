@@ -407,6 +407,82 @@ def blurb(content, fallback):
     return text
 
 
+FLAGS = (
+    ("한국", "kr", "한국.jpg"),
+    ("중국", "cn", "중국.jpg"),
+    ("일본", "jp", "일본.jpg"),
+    ("태국", "th", "태국.jpg"),
+    ("베트남", "vn", "베트남.PNG"),
+    ("러시아", "ru", "러시아.jpg"),
+)
+NATION_NAMES = tuple(name for name, _code, _file in FLAGS)
+
+
+def staff_text(content):
+    lines = []
+    on = False
+    for raw in (content or "").split("\n"):
+        text = raw.strip()
+        if not text:
+            continue
+        head = heading_of(text)
+        if head:
+            if on:
+                break
+            on = head == "관리사님"
+            continue
+        if on:
+            lines.append(text)
+    return "\n".join(lines)
+
+
+def nations_in(text):
+    flat = re.sub(r"\s+", "", text or "")
+    for token in ("한국어", "한국말", "일본식", "일본스웨디시", "일본유학", "일본협회"):
+        flat = flat.replace(token, " ")
+    found = []
+
+    def add(name):
+        if name not in found:
+            found.append(name)
+
+    for match in re.finditer(r"(베트남|러시아|태국|일본|중국|한국)인", flat):
+        add(match.group(1))
+        before = flat[max(0, match.start() - 18):match.start()]
+        for name in NATION_NAMES:
+            if name in before:
+                add(name)
+    for match in re.finditer(r"국적[:：]?([^.]{0,48})", flat):
+        chunk = match.group(1)
+        for name in NATION_NAMES:
+            if name in chunk:
+                add(name)
+    for name in NATION_NAMES:
+        if re.search(r"[(\[（【]" + name + r"(?:인)?[)\]）】]", flat):
+            add(name)
+        if re.search(name + r"(?:관리사|테라피스트|쌤|원장)", flat):
+            add(name)
+        if re.search(name + r"[가-힣]{1,4}쌤", flat):
+            add(name)
+    ordered = [name for name in NATION_NAMES if name in found]
+    return ordered
+
+
+def flag_html(names):
+    bits = []
+    have = set(names or [])
+    for name, code, filename in FLAGS:
+        if name not in have:
+            continue
+        ext = "png" if filename.lower().endswith(".png") else "jpg"
+        bits.append(
+            f'<img class="flag" src="/images/flags/{code}.{ext}" alt="{escape(name)}" width="20" height="14">'
+        )
+    if not bits:
+        return ""
+    return f'<span class="flags">{"".join(bits)}</span>'
+
+
 def heading_of(line):
     compact = re.sub(r"[^가-힣]", "", line or "")
     if compact in HEADINGS:
@@ -657,7 +733,7 @@ def review_section(shop):
     return f'<section class="story reviews"><h2>후기</h2><div class="story-body">{items}</div></section>'
 
 
-def format_content(content, after_notice=""):
+def format_content(content, after_notice="", flags=""):
     raw_lines = []
     for raw in (content or "").split("\n"):
         text = raw.strip()
@@ -687,7 +763,8 @@ def format_content(content, after_notice=""):
         nonlocal title
         if not title and not blocks:
             return
-        heading = f"<h2>{escape(title)}</h2>" if title else ""
+        mark = flags if title == "관리사님" else ""
+        heading = f"<h2>{escape(title)}{mark}</h2>" if title else ""
         html = []
         rates = []
 
@@ -991,7 +1068,7 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
 {f'<meta property="og:image" content="{escape(og_image)}">' if og_image else ''}
 <meta name="twitter:card" content="{'summary_large_image' if og_image else 'summary'}">
 <link rel="icon" href="/assets/favicon.svg">
-<link rel="stylesheet" href="/assets/style.css?v=15">
+<link rel="stylesheet" href="/assets/style.css?v=17">
 {extra_head}
 {ld}
 </head>
@@ -1053,7 +1130,7 @@ def card_html(shop, eager=False):
   <div class="card-content">
     <div>
       <div class="name-row"><div class="shop-name">{escape(shop["name"])}</div><span class="shop-km"></span></div>
-      <div class="shop-district">{escape(shop["place"])}</div>
+      <div class="shop-district">{escape(shop["place"])}{flag_html(shop.get("nations"))}</div>
     </div>
     {greet_html}
     <div class="card-footer">{price_html}{foot}</div>
@@ -1092,6 +1169,7 @@ def build_shops():
         name = shop_name(title) or title
         sub, spots = location_of(address, title, region)
         service = (fields.get("종목") or "").strip() or "마사지"
+        nations = nations_in(staff_text(content))
         slogan = re.sub(r"\s+", " ", (fields.get("title") or "").strip())
         if len(slogan) > 80:
             slogan = slogan[:79].rstrip() + "…"
@@ -1112,6 +1190,7 @@ def build_shops():
             "slogan": slogan,
             "description": blurb(content, f"{place_label(title, region)} {name} 마사지 업체 정보입니다."),
             "content": content,
+            "nations": nations,
             "images": [],
             "filename_text": "",
             "kind": "shop",
@@ -1420,13 +1499,13 @@ def render_shop(shop):
   <div class="detail-cover">{hero}</div>
   <section class="detail-card">
     <h1 class="detail-name">{escape(shop["name"])}</h1>
-    <div class="shop-district">{escape(district)}</div>
+    <div class="shop-district">{escape(district)}{flag_html(shop.get("nations"))}</div>
     {price_html}
     <section class="fact-list">{''.join(facts) or '<div class="fact"><span>안내</span><p>상세 코스와 예약은 업체에 확인해 주세요.</p></div>'}</section>
     {call}
   </section>
   {gallery}
-  <article class="prose">{format_content(shop["content"], review_section(shop))}</article>
+  <article class="prose">{format_content(shop["content"], review_section(shop), flag_html(shop.get("nations")))}</article>
   {near_section(shop)}
   {detail_actions(shop)}
 </main>"""
@@ -1585,7 +1664,7 @@ def render_nearby():
   </div>
   <section id="nearby-list" class="nearby-list"></section>
 </main>
-<script src="/assets/nearby.js?v=9"></script>"""
+<script src="/assets/nearby.js?v=10"></script>"""
     html = page_shell(
         f"내주변 지도 | {BRAND}",
         f"현재 위치에서 가까운 마사지 업체를 지도에서 찾아보세요. {BRAND}",
@@ -1780,6 +1859,11 @@ def main():
         os.path.join(OUT, "assets", "places.json"),
         json.dumps({name: [lat, lng] for name, (lat, lng) in COORDS.items()}, ensure_ascii=False),
     )
+    flag_dir = os.path.join(OUT, "images", "flags")
+    os.makedirs(flag_dir, exist_ok=True)
+    for _name, code, filename in FLAGS:
+        ext = "png" if filename.lower().endswith(".png") else "jpg"
+        shutil.copy2(os.path.join(IMG_SRC, "국기", filename), os.path.join(flag_dir, f"{code}.{ext}"))
     copied = set()
     for shop in shops:
         for image in shop["images"]:

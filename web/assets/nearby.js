@@ -163,7 +163,18 @@
     });
   }
 
-  function drawPins(rows) {
+  function moveToOrigin() {
+    if (usingKakao && kakaoMap) {
+      if (typeof kakaoMap.relayout === "function") kakaoMap.relayout();
+      kakaoMap.setLevel(5);
+      kakaoMap.setCenter(new kakao.maps.LatLng(origin.lat, origin.lng));
+    } else if (leafletMap) {
+      leafletMap.invalidateSize();
+      leafletMap.setView([origin.lat, origin.lng], 14, { animate: true });
+    }
+  }
+
+  function drawPins(rows, fit) {
     closePicker();
     clearPins();
     if (cat === "home") return;
@@ -229,8 +240,8 @@
             icon: L.divIcon({
               className: "map-label-icon",
               html: pinHtml(group),
-              iconSize: group.length > 1 ? [48, 52] : [180, 52],
-              iconAnchor: group.length > 1 ? [24, 52] : [90, 52]
+              iconSize: group.length > 1 ? [52, 56] : [210, 58],
+              iconAnchor: group.length > 1 ? [26, 56] : [105, 58]
             })
           });
           marker.on("click", function (event) {
@@ -244,12 +255,7 @@
       })(groups[i]);
     }
     if (fit === false) return;
-    if (usingKakao && kakaoMap) {
-      kakaoMap.setLevel(5);
-      kakaoMap.setCenter(new kakao.maps.LatLng(origin.lat, origin.lng));
-    } else if (leafletMap) {
-      leafletMap.setView([origin.lat, origin.lng], 14);
-    }
+    moveToOrigin();
   }
 
   function render() {
@@ -348,7 +354,7 @@
     selectShop(button.getAttribute("data-id"));
   });
 
-  function locate() {
+  function locate(fresh) {
     if (!navigator.geolocation) {
       statusEl.firstChild.textContent = "이 브라우저에서는 현재 위치를 쓸 수 없어 서울역 기준으로 보여 줍니다.";
       render();
@@ -359,15 +365,16 @@
       located = true;
       origin = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       render();
+      moveToOrigin();
     }, function () {
       located = false;
       statusEl.firstChild.textContent = "위치를 허용하지 않아 서울역 기준으로 보여 줍니다.";
       render();
-    }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 });
+    }, { enableHighAccuracy: true, timeout: fresh ? 15000 : 10000, maximumAge: fresh ? 0 : 60000 });
   }
 
   var gps = document.getElementById("nearby-gps");
-  if (gps) gps.addEventListener("click", locate);
+  if (gps) gps.addEventListener("click", function () { locate(true); });
 
   function bootLeaflet() {
     loadCss("https://unpkg.com/leaflet@1.9.4/dist/leaflet.css");
