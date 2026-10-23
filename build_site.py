@@ -14,7 +14,7 @@ IMG_SRC = os.path.join(ROOT, "images")
 WEB = os.path.join(ROOT, "web", "assets")
 OUT = os.path.join(ROOT, "site")
 ORIGIN = "https://outcallmassage.co.kr"
-BRAND = "건마모아"
+BRAND = "콜건마"
 LOCATION_TREE = {}
 COORDS = {
     "강남": (37.497, 127.028), "서초": (37.483, 127.032), "송파": (37.514, 127.106),
