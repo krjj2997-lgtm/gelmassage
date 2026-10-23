@@ -294,33 +294,34 @@ body[data-page="nearby"] .foot { display: none; }
 .shop-card p { margin: 3px 0 0; font-size: .8rem; color: #6b7280; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .shop-card .price { color: #111; font-weight: 700; font-size: .9rem; }
 .shop-card .price-label { font-size: .72rem; color: #888; font-weight: 700; margin-right: 4px; }
-.map-label-icon, .map-pin button { background: none; border: 0; padding: 0; font: inherit; }
 .map-label-icon { background: none !important; border: none !important; }
+.map-pin button { padding: 0; font: inherit; cursor: pointer; }
 .map-pin {
   position: relative;
   display: inline-flex;
   flex-direction: column;
   align-items: center;
-  padding-bottom: 6px;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .2));
+  padding-bottom: 8px;
+  filter: drop-shadow(0 3px 6px rgba(45, 38, 90, .22));
 }
-.map-label {
+button.map-label {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  max-width: 210px;
-  padding: 6px 10px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
+  gap: 6px;
+  max-width: 220px;
+  padding: 5px 11px;
+  background: #fffdf8;
+  border: 2px solid #5c6ad6;
+  border-radius: 999px;
   font-size: 12px;
   line-height: 1.2;
   white-space: nowrap;
   cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .7);
 }
-.map-label.is-selected { border-color: #667eea; box-shadow: 0 0 0 2px rgba(102, 126, 234, .35); }
-.map-name { font-weight: 700; max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
-.map-price { font-weight: 700; color: #e11d48; }
+button.map-label.is-selected { border-color: #c46a58; box-shadow: 0 0 0 3px rgba(196, 106, 88, .28); }
+.map-name { font-weight: 800; color: #241f33; max-width: 108px; overflow: hidden; text-overflow: ellipsis; }
+.map-price { font-weight: 800; color: #e11d48; padding-left: 6px; border-left: 1px solid #e4e7f4; }
 .map-cluster {
   min-width: 34px;
   height: 34px;
@@ -342,7 +343,7 @@ body[data-page="nearby"] .foot { display: none; }
   height: 0;
   border-left: 8px solid transparent;
   border-right: 8px solid transparent;
-  border-top: 10px solid #fff;
+  border-top: 10px solid #fffdf8;
   margin-top: -1px;
 }
 .map-pin--cluster::after { border-top-color: #667eea; }
@@ -703,7 +704,9 @@ body[data-page="nearby"] .foot { display: none; }
 .name-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .shop-km { flex: 0 0 auto; color: #667eea; font-size: .82rem; font-weight: 700; white-space: nowrap; }
 .shop-km:empty { display: none; }
-.shop-district { color: #2f6f62; font-size: .78rem; font-weight: 700; margin-top: 2px; letter-spacing: -0.02em; }
+.shop-district { color: #2f6f62; font-size: .78rem; font-weight: 700; margin-top: 2px; letter-spacing: -0.02em; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.flags { display: inline-flex; align-items: center; gap: 3px; }
+.flag { width: 20px; height: 14px; object-fit: cover; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0, 0, 0, .18); }
 .greeting {
   color: #8a8178;
   font-size: .8rem;
@@ -980,6 +983,9 @@ body[data-page="shop"] { padding-bottom: 78px; }
   font-weight: 700;
   color: #2f6f62;
   letter-spacing: -0.04em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .story.reviews .story-body p {
   margin: 0 0 10px;
