@@ -19,11 +19,11 @@
 <meta name="twitter:title" content="경북 마사지 업체 | 콜건마">
 <meta name="twitter:description" content="경북 마사지·스웨디시·출장 업체 41곳의 위치, 가격, 영업시간을 비교하세요.">
 <link rel="icon" href="/assets/favicon.svg">
-<link rel="stylesheet" href="/assets/style.css?v=18">
+<link rel="stylesheet" href="/assets/style.css?v=19">
 
 
 </head>
-<body data-page="region" data-region="경북" data-title="경북 마사지 업체 | 콜건마" data-description="경북 마사지·스웨디시·출장 업체 41곳의 위치, 가격, 영업시간을 비교하세요." data-canonical="https://outcallmassage.co.kr/region/gyeongbuk/">
+<body data-page="region" data-region="경북" data-sub="" data-title="경북 마사지 업체 | 콜건마" data-description="경북 마사지·스웨디시·출장 업체 41곳의 위치, 가격, 영업시간을 비교하세요." data-canonical="https://outcallmassage.co.kr/region/gyeongbuk/">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="header" role="banner">
   <div class="header-content">
@@ -78,7 +78,6 @@
   <nav class="crumb" aria-label="경로"><a href="/">홈</a> / <span id="crumb-current">경북 마사지 업체</span></nav>
   <div class="results-header"><h1>경북 마사지 업체</h1></div>
   <p id="result-note" class="result-note">경북에 등록된 마사지 업체 41곳입니다. 사진, 가격, 위치를 보고 카드를 누르면 코스와 영업시간, 연락처를 확인할 수 있습니다.</p>
-  <nav class="place-links" id="place-links" aria-label="세부지역"><a href="?sub=%EA%B2%BD%EC%82%B0">경산</a><a href="?sub=%EA%B2%BD%EC%A3%BC">경주</a><a href="?sub=%EA%B3%A0%EB%A0%B9">고령</a><a href="?sub=%EA%B5%AC%EB%AF%B8">구미</a><a href="?sub=%EA%B5%B0%EC%9C%84">군위</a><a href="?sub=%EA%B9%80%EC%B2%9C">김천</a><a href="?sub=%EB%AC%B8%EA%B2%BD">문경</a><a href="?sub=%EB%B4%89%ED%99%94">봉화</a><a href="?sub=%EC%83%81%EC%A3%BC">상주</a><a href="?sub=%EC%84%B1%EC%A3%BC">성주</a><a href="?sub=%EC%95%88%EB%8F%99">안동</a><a href="?sub=%EC%98%81%EB%8D%95">영덕</a><a href="?sub=%EC%98%81%EC%96%91">영양</a><a href="?sub=%EC%98%81%EC%A3%BC">영주</a><a href="?sub=%EC%98%81%EC%B2%9C">영천</a><a href="?sub=%EC%98%88%EC%B2%9C">예천</a><a href="?sub=%EC%9A%B8%EB%A6%89">울릉</a><a href="?sub=%EC%9A%B8%EC%A7%84">울진</a><a href="?sub=%EC%9D%98%EC%84%B1">의성</a><a href="?sub=%EC%B2%AD%EB%8F%84">청도</a><a href="?sub=%EC%B2%AD%EC%86%A1">청송</a><a href="?sub=%EC%B9%A0%EA%B3%A1">칠곡</a><a href="?sub=%ED%8F%AC%ED%95%AD">포항</a></nav><nav class="spot-links" id="spot-links" aria-label="동/역" hidden></nav>
   <p id="empty" class="empty" hidden>조건에 맞는 업체가 없습니다. 다른 지역이나 이름으로 다시 찾아보세요.</p>
   <div class="massage-list"><a class="massage-card" href="/shop/51364/" data-q="007 포항 용흥1인샵 경북 건식 마사지 경상북도 포항시 북구 용흥동 143-19/경상북도 포항시 북구 죽파로 5/죽도파출소 도보5분 " data-region="경북" data-sub="포항" data-spots="용흥동" data-kind="shop" data-lat="36.0146" data-lng="129.3507">
   <div class="card-image"><img class="shop-image" src="/images/%EC%8B%A0%EC%A4%91%EB%8F%99%EB%A7%88%EC%82%AC%EC%A7%80_%EB%B6%80%EC%B2%9CCOZY.jpg" alt="포항 용흥1인샵 007 건식 업체 사진" width="400" height="225" loading="eager" fetchpriority="high"><div class="image-overlay"><div class="shop-type">힐링샵</div></div></div>
@@ -546,6 +545,13 @@
   var spot = params.get("spot") || "";
   var kind = params.get("kind") || "";
   var theme = params.get("theme") || "";
+  var parts = location.pathname.split("/").filter(Boolean);
+  if (parts.length === 2 && parts[0] === "region" && sub) {
+    params.delete("sub");
+    var rest = params.toString();
+    location.replace("/region/" + parts[1] + "/" + encodeURIComponent(sub) + "/" + (rest ? "?" + rest : ""));
+    return;
+  }
   var labels = {
     shop: "마사지",
     outcall: "출장마사지",
@@ -556,22 +562,17 @@
     "중국": "중국마사지",
     "발마사지": "발마사지"
   };
+  var embedded = document.body.getAttribute("data-sub") || "";
+  if (!sub && embedded) sub = embedded;
   if (!sub && !spot && !labels[kind] && !labels[theme]) return;
   var region = document.body.getAttribute("data-region") || "";
-  var topics = [];
-  if (labels[kind] === "출장마사지") topics.push("출장마사지");
-  if (labels[theme]) topics.push(labels[theme]);
-  else if (labels[kind]) topics.push(labels[kind]);
-  else topics.push("마사지");
-  var bits = [];
-  if (region) bits.push(region);
-  if (sub) bits.push(sub);
-  if (spot) bits.push(spot);
-  var heading = bits.concat(topics).join(" ") + " 업체";
+  var topic = labels[theme] || (labels[kind] === "출장마사지" ? "출장마사지" : "마사지");
+  var place = spot || sub || region;
+  var heading = place + topic + " 업체";
   var title = heading + " | 콜건마";
   var description = heading + "의 위치, 가격, 영업시간을 비교하세요.";
   var query = new URLSearchParams();
-  if (sub) query.set("sub", sub);
+  if (sub && sub !== embedded) query.set("sub", sub);
   if (spot) query.set("spot", spot);
   if (labels[kind]) query.set("kind", kind);
   if (labels[theme]) query.set("theme", theme);
@@ -599,6 +600,6 @@
 })();
 </script>
 
-<script src="/assets/site.js?v=13" defer></script>
+<script src="/assets/site.js?v=14" defer></script>
 </body>
 </html>

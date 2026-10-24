@@ -139,30 +139,25 @@
   }
 
   function landingPhrase(sub, spot) {
-    var topics = [];
-    if (currentKind === "outcall") topics.push("출장마사지");
-    if (themeLabels[currentTheme]) topics.push(themeLabels[currentTheme]);
-    else if (currentKind === "shop") topics.push("마사지");
-    var bits = [];
-    if (page === "region" && pageRegion) bits.push(pageRegion);
-    if (sub) bits.push(sub);
-    if (spot) bits.push(spot);
-    if (!topics.length) topics.push("마사지");
-    return { bits: bits, topics: topics, heading: bits.concat(topics).join(" ") + " 업체" };
+    var topic = themeLabels[currentTheme] || (currentKind === "outcall" ? "출장마사지" : "마사지");
+    var place = spot || sub || "";
+    if (place) return place + topic + " 업체";
+    if (currentKind || currentTheme) return (page === "region" ? pageRegion : "") + topic + " 업체";
+    return "";
   }
 
   function paintLanding(sub, spot, count) {
     if (page !== "region" && page !== "all") return;
     var filtered = !!(sub || spot || currentKind || currentTheme);
-    var phrase = landingPhrase(sub, spot);
-    var heading = filtered || page === "region" ? phrase.heading : "";
+    var heading = landingPhrase(sub, spot);
     var baseTitle = document.body.getAttribute("data-title") || document.title;
     var baseHeading = baseTitle.replace(/ \| 콜건마$/, "");
     if (!filtered && page === "all") heading = "";
     var title = heading ? heading + " | 콜건마" : baseTitle;
     var description = heading ? heading + "의 위치, 가격, 영업시간을 비교하세요." : (document.body.getAttribute("data-description") || "");
+    var embeddedSub = document.body.getAttribute("data-sub") || "";
     var query = new URLSearchParams();
-    if (sub) query.set("sub", sub);
+    if (sub && sub !== embeddedSub) query.set("sub", sub);
     if (spot) query.set("spot", spot);
     if (currentKind === "shop" || currentKind === "outcall") query.set("kind", currentKind);
     if (themeLabels[currentTheme]) query.set("theme", currentTheme);
@@ -182,76 +177,19 @@
     setMeta('meta[name="twitter:description"]', "content", description);
     var robots = document.querySelector('meta[name="robots"]');
     if (robots) robots.setAttribute("content", filtered && count === 0 ? "noindex,follow" : "index,follow");
-    var crumb = document.querySelector(".crumb");
-    if (crumb) {
-      var html = '<a href="/">홈</a>';
-      var path = location.pathname;
-      var trail = [];
-      if (page === "region" && pageRegion) trail.push({ name: pageRegion, href: path });
-      if (sub) trail.push({ name: sub, href: path + "?sub=" + encodeURIComponent(sub) });
-      if (spot) trail.push({ name: spot, href: path + "?" + new URLSearchParams({ sub: sub, spot: spot }).toString() });
-      if (currentKind || currentTheme) phrase.topics.forEach(function (topic) {
-        var params = new URLSearchParams();
-        if (sub) params.set("sub", sub);
-        if (spot) params.set("spot", spot);
-        if (topic === "출장마사지") params.set("kind", "outcall");
-        else if (topic === "마사지" && currentKind === "shop") params.set("kind", "shop");
-        else if (themeLabels[currentTheme] === topic) params.set("theme", currentTheme);
-        var href = path + (params.toString() ? "?" + params.toString() : "");
-        trail.push({ name: topic, href: href });
-      });
-      if (!filtered) {
-        html += ' / <span id="crumb-current">' + esc(baseHeading) + "</span>";
-      } else {
-        trail.forEach(function (item, index) {
-          html += " / ";
-          if (index === trail.length - 1) html += '<span id="crumb-current">' + esc(item.name) + "</span>";
-          else html += '<a href="' + esc(item.href) + '">' + esc(item.name) + "</a>";
-        });
-      }
-      crumb.innerHTML = html;
-    }
+    var crumb = document.getElementById("crumb-current");
+    if (crumb && heading) crumb.textContent = heading;
     var ld = document.getElementById("listing-ld");
-    if (ld && crumb) {
+    var nav = document.querySelector(".crumb");
+    if (ld && nav) {
       var names = [];
-      crumb.querySelectorAll("a, span").forEach(function (node) { names.push(node.textContent); });
+      nav.querySelectorAll("a, span").forEach(function (node) { names.push(node.textContent); });
       var items = names.map(function (name, index) {
         return { "@type": "ListItem", position: index + 1, name: name };
       });
       if (items[0]) items[0].item = "https://outcallmassage.co.kr/";
       if (canon && items.length > 1) items[items.length - 1].item = canon;
       ld.textContent = JSON.stringify({ "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: items });
-    }
-    var placeNav = document.getElementById("place-links");
-    if (placeNav) {
-      placeNav.querySelectorAll("a").forEach(function (link) {
-        var name = link.textContent;
-        var params = new URLSearchParams();
-        params.set("sub", name);
-        if (currentKind) params.set("kind", currentKind);
-        if (currentTheme) params.set("theme", currentTheme);
-        link.setAttribute("href", "?" + params.toString());
-        link.classList.toggle("is-on", name === sub);
-      });
-    }
-    var spotNav = document.getElementById("spot-links");
-    if (spotNav) {
-      var spots = sub ? spotsFor(regionSel ? regionSel.value : pageRegion, sub) : [];
-      if (!spots.length) {
-        spotNav.hidden = true;
-        spotNav.innerHTML = "";
-      } else {
-        spotNav.hidden = false;
-        spotNav.innerHTML = spots.map(function (name) {
-          var params = new URLSearchParams();
-          params.set("sub", sub);
-          params.set("spot", name);
-          if (currentKind) params.set("kind", currentKind);
-          if (currentTheme) params.set("theme", currentTheme);
-          var on = name === spot ? " class=\"is-on\"" : "";
-          return "<a" + on + ' href="?' + params.toString() + '">' + esc(name) + "</a>";
-        }).join("");
-      }
     }
     if (note) {
       if (!filtered) note.textContent = noteBase;
@@ -296,8 +234,9 @@
     if (empty) empty.hidden = shown.length !== 0;
     paintLanding(sub, spot, shown.length);
     if (push && (page === "region" || page === "all")) {
+      var embeddedSub = document.body.getAttribute("data-sub") || "";
       var params = new URLSearchParams();
-      if (sub) params.set("sub", sub);
+      if (sub && sub !== embeddedSub) params.set("sub", sub);
       if (spot) params.set("spot", spot);
       if (currentKind) params.set("kind", currentKind);
       if (currentTheme) params.set("theme", currentTheme);
@@ -357,6 +296,10 @@
     if (input && input.value.trim()) extra.set("q", input.value.trim());
     var tail = extra.toString();
     if (page === "region" && region === pageRegion) {
+      if (document.body.getAttribute("data-sub")) {
+        location.href = "/region/" + regionSlug() + "/" + (tail ? "?" + tail : "");
+        return;
+      }
       fillSelect(subSel, "세부지역", subsFor(region), "");
       fillSelect(spotSel, "동/역", [], "");
       apply(true);
@@ -374,6 +317,18 @@
     if (!regionSel) return;
     if (subSel) {
       subSel.addEventListener("change", function () {
+        if (page === "region" && regionSlug()) {
+          var extra = new URLSearchParams();
+          if (currentKind) extra.set("kind", currentKind);
+          if (currentTheme) extra.set("theme", currentTheme);
+          if (input && input.value.trim()) extra.set("q", input.value.trim());
+          var tail = extra.toString();
+          var next = subSel.value
+            ? "/region/" + regionSlug() + "/" + encodeURIComponent(subSel.value) + "/"
+            : "/region/" + regionSlug() + "/";
+          location.href = next + (tail ? "?" + tail : "");
+          return;
+        }
         fillSelect(spotSel, "동/역", spotsFor(regionSel.value, subSel.value), "");
         apply(true);
       });
@@ -383,7 +338,8 @@
 
     var params = new URLSearchParams(location.search);
     var region = page === "region" ? pageRegion : (params.get("region") || "");
-    var sub = params.get("sub") || "";
+    var pageSub = document.body.getAttribute("data-sub") || "";
+    var sub = params.get("sub") || pageSub;
     var spot = params.get("spot") || "";
     currentKind = params.get("kind") || "";
     currentTheme = params.get("theme") || "";
