@@ -1263,7 +1263,7 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
   </div>
 </footer>
 {listing_seo_script() if page in ("region", "all") else ""}
-<script src="/assets/site.js?v=15" defer></script>
+<script src="/assets/site.js?v=16" defer></script>
 </body>
 </html>
 """
@@ -1619,11 +1619,12 @@ def render_listing(shops, title, description, canonical, h1, intro, active="", p
         trail = [("홈", "/"), (f"{active} 마사지 업체", f"/region/{slug}/"), (h1, "")]
     else:
         trail = [("홈", "/"), (h1, "")]
+    empty_hidden = "" if not shops else " hidden"
     body = f"""<main id="main" class="main-content">
   {crumb(trail)}
   <div class="results-header"><h1>{escape(h1)}</h1></div>
   <p id="result-note" class="result-note">{escape(intro)}</p>
-  <p id="empty" class="empty" hidden>조건에 맞는 업체가 없습니다. 다른 지역이나 이름으로 다시 찾아보세요.</p>
+  <p id="empty" class="empty"{empty_hidden}>조건에 맞는 업체가 없습니다. 다른 지역이나 이름으로 다시 찾아보세요.</p>
   <div class="massage-list">{cards}</div>
   {listing_json_ld(h1, canonical)}
 </main>"""
@@ -1635,6 +1636,7 @@ def render_listing(shops, title, description, canonical, h1, intro, active="", p
         spot=spot,
         place=place,
         list_src=list_src,
+        robots=("index,follow" if shops else "noindex,follow") if (sub or spot) else "index,follow",
     )
 
 
@@ -1664,10 +1666,12 @@ def render_regions(shops):
                 continue
             place = sub_place(name, sub)
             heading = f"{place}마사지 업체"
-            sub_intro = f"{heading}를 먼저 보여주고, 이어서 가까운 {name} 업체를 보여 줍니다."
+            sub_rows = [shop for shop in rows if shop.get("sub") == sub]
+            sub_rows.sort(key=lambda shop: (0 if shop["images"] else 1, shop["name"]))
+            sub_intro = f"{heading} {len(sub_rows)}곳입니다." if sub_rows else f"{heading}에 해당하는 업체가 없습니다."
             sub_canon = f"{ORIGIN}/region/{slug}/{quote(sub, safe='')}/"
             sub_html = render_listing(
-                rows,
+                sub_rows,
                 f"{heading} | {BRAND}",
                 f"{heading}의 위치, 가격, 영업시간을 비교하세요.",
                 sub_canon,
@@ -1685,21 +1689,18 @@ def render_regions(shops):
                 spot_name = spot_place(name, sub, spot)
                 spot_heading = f"{spot_name}마사지 업체"
                 spot_rows = [
-                    shop for shop in rows
-                    if shop.get("sub") == sub or spot in (shop.get("spots") or ())
+                    shop for shop in sub_rows
+                    if spot in (shop.get("spots") or ())
                 ]
-                spot_rows.sort(key=lambda shop: (
-                    0 if spot in (shop.get("spots") or ()) else 1,
-                    0 if shop["images"] else 1,
-                    shop["name"],
-                ))
+                spot_rows.sort(key=lambda shop: (0 if shop["images"] else 1, shop["name"]))
+                spot_intro = f"{spot_heading} {len(spot_rows)}곳입니다." if spot_rows else f"{spot_heading}에 해당하는 업체가 없습니다."
                 spot_html = render_listing(
                     spot_rows,
                     f"{spot_heading} | {BRAND}",
                     f"{spot_heading}의 위치, 가격, 영업시간을 비교하세요.",
                     f"{ORIGIN}/region/{slug}/{quote(sub, safe='')}/{quote(spot, safe='')}/",
                     spot_heading,
-                    f"{spot_heading}를 먼저 보여주고, 이어서 가까운 {name} 업체를 보여 줍니다.",
+                    spot_intro,
                     active=name,
                     sub=sub,
                     spot=spot,
@@ -2166,6 +2167,12 @@ def filter_query(sub="", spot="", kind="", theme=""):
 
 def filter_page_urls(shops):
     live = {shop["region"] for shop in shops}
+    sub_has = {(shop.get("region"), shop.get("sub")) for shop in shops if shop.get("sub")}
+    spot_has = {
+        (shop.get("region"), shop.get("sub"), spot)
+        for shop in shops
+        for spot in (shop.get("spots") or ())
+    }
     found = []
     for name, slug in REGIONS:
         if name not in live:
@@ -2174,12 +2181,14 @@ def filter_page_urls(shops):
         for kind, theme in SITEMAP_FILTERS:
             found.append(base + filter_query(kind=kind, theme=theme))
         for sub, spots in (LOCATION_TREE.get(name) or {}).items():
+            if not path_segment(sub) or (name, sub) not in sub_has:
+                continue
             sub_base = f"{base}{quote(sub, safe='')}/"
             found.append(sub_base)
             for kind, theme in SITEMAP_FILTERS:
                 found.append(sub_base + filter_query(kind=kind, theme=theme))
             for spot in spots:
-                if not path_segment(spot):
+                if not path_segment(spot) or (name, sub, spot) not in spot_has:
                     continue
                 spot_base = f"{sub_base}{quote(spot, safe='')}/"
                 found.append(spot_base)
