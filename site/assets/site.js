@@ -345,8 +345,8 @@
   if (!regionSel && !input) return;
   if (regionSel) regionSel.addEventListener("change", goRegion);
   Promise.all([
-    fetch("/assets/locations.json").then(function (response) { return response.json(); }),
-    fetch("/assets/places.json").then(function (response) { return response.json(); })
+    fetch("/assets/locations.json?v=2").then(function (response) { return response.json(); }),
+    fetch("/assets/places.json?v=2").then(function (response) { return response.json(); })
   ]).then(function (rows) {
     tree = rows[0] || {};
     places = rows[1] || {};

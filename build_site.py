@@ -10,6 +10,9 @@ from urllib.parse import quote
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "gelmsg", "market_full.json")
+CATALOG_PATH = os.path.join(ROOT, "gelmsg", "place_catalog.tsv")
+CATALOG_ROWS = []
+CATALOG_INDEX = {}
 IMG_SRC = os.path.join(ROOT, "images")
 WEB = os.path.join(ROOT, "web", "assets")
 OUT = os.path.join(ROOT, "site")
@@ -344,12 +347,79 @@ def choose_spots(sub, tokens, title_parts):
     return kept[:8]
 
 
+def load_place_catalog():
+    global CATALOG_ROWS, CATALOG_INDEX
+    rows = []
+    seen = set()
+    fixes = {
+        ("부산", "개금역", "부산"): ("부산진", "개금역", "부산"),
+        ("동두", "지행역", "경기"): ("동두천", "지행역", "경기"),
+        ("의정", "곤제역", "경기"): ("의정부", "곤제역", "경기"),
+    }
+    yangyang = {"양양읍", "손양면", "현북면", "현남면", "강현면"}
+    with open(CATALOG_PATH, encoding="utf-8") as handle:
+        for raw in handle:
+            line = raw.strip()
+            if not line or line.startswith("#"):
+                continue
+            sub, spot, region = line.split("\t")
+            sub, spot, region = fixes.get((sub, spot, region), (sub, spot, region))
+            if region == "강원" and sub == "고성" and spot in yangyang:
+                sub = "양양"
+            key = (region, sub, spot)
+            if key in seen:
+                continue
+            seen.add(key)
+            rows.append(key)
+    grouped = {}
+    for region, sub, spot in rows:
+        grouped.setdefault(region, {}).setdefault(spot, []).append(sub)
+    CATALOG_ROWS = rows
+    CATALOG_INDEX = grouped
+
+
+SPOT_RE = re.compile(r"(?<![0-9A-Za-z가-힣])([0-9A-Za-z가-힣·.]{1,40}(?:역|읍|면|동|리))(?![0-9A-Za-z가-힣])")
+
+
+def apply_catalog(region, sub, spots, address, title):
+    found = CATALOG_INDEX.get(region) or {}
+    blob = f"{address or ''} {title or ''}"
+    hits = []
+    seen = set()
+    for match in SPOT_RE.finditer(blob):
+        spot = match.group(1)
+        for spot_sub in found.get(spot) or []:
+            key = (spot, spot_sub)
+            if key not in seen:
+                seen.add(key)
+                hits.append(key)
+    hits.sort(key=lambda item: len(item[0]), reverse=True)
+    if not hits:
+        return sub, spots
+
+    def named(spot_sub):
+        return re.search(
+            rf"(?<![0-9A-Za-z가-힣]){re.escape(spot_sub)}(?:구|시|군)?(?![0-9A-Za-z가-힣])",
+            blob,
+        ) is not None
+
+    if not sub or sub == "기타":
+        for _spot, spot_sub in hits:
+            if named(spot_sub):
+                sub = spot_sub
+                break
+    for spot, spot_sub in hits:
+        if (spot_sub == sub or named(spot_sub)) and spot not in spots:
+            spots.append(spot)
+    return sub, spots[:12]
+
+
 def location_of(address, title, region):
     tokens = admin_tokens(address)
     title_parts = title_place_parts(title)
     sub = choose_sub(region, tokens, title_parts)
     spots = choose_spots(sub, tokens, title_parts)
-    return sub, spots
+    return apply_catalog(region, sub, spots, address, title)
 
 
 def shop_name(title):
@@ -960,6 +1030,10 @@ def location_tree(shops):
         for spot in shop.get("spots") or []:
             if spot not in bucket:
                 bucket.append(spot)
+    for region, sub, spot in CATALOG_ROWS:
+        bucket = tree.setdefault(region, {}).setdefault(sub, [])
+        if spot not in bucket:
+            bucket.append(spot)
     ordered = {}
     for name, _slug in REGIONS:
         if name not in tree:
@@ -1093,7 +1167,7 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
     <p>© {BRAND}</p>
   </div>
 </footer>
-<script src="/assets/site.js?v=9" defer></script>
+<script src="/assets/site.js?v=10" defer></script>
 </body>
 </html>
 """
@@ -1837,6 +1911,23 @@ def render_404():
     write(os.path.join(OUT, "404.html"), html)
 
 
+def place_coords():
+    coords = {name: [lat, lng] for name, (lat, lng) in COORDS.items()}
+    region_names = {name for name, _slug in REGIONS}
+    sub_regions = {}
+    spot_places = {}
+    for region, sub, spot in CATALOG_ROWS:
+        sub_regions.setdefault(sub, set()).add(region)
+        spot_places.setdefault(spot, set()).add((region, sub))
+    for region, sub, spot in CATALOG_ROWS:
+        if spot in coords or len(spot_places[spot]) != 1:
+            continue
+        if sub in region_names or len(sub_regions.get(sub, ())) != 1 or sub not in COORDS:
+            continue
+        coords[spot] = [COORDS[sub][0], COORDS[sub][1]]
+    return coords
+
+
 def main():
     global LOCATION_TREE
     if os.path.isdir(OUT):
@@ -1849,6 +1940,7 @@ def main():
     shutil.copy2(os.path.join(WEB, "nearby.js"), os.path.join(OUT, "assets", "nearby.js"))
     favicon = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#2f6f62"/><path fill="#f6efe4" d="M16 6c-3.6 4.4-6 7.2-6 10.6a6 6 0 0 0 12 0C22 13.2 19.6 10.4 16 6z"/></svg>"""
     write(os.path.join(OUT, "assets", "favicon.svg"), favicon)
+    load_place_catalog()
     shops = build_shops()
     REVIEW_SEEN.clear()
     shops, photo_count, photo_repeats = attach_images(shops)
@@ -1857,7 +1949,7 @@ def main():
     write(os.path.join(OUT, "assets", "locations.json"), json.dumps(LOCATION_TREE, ensure_ascii=False))
     write(
         os.path.join(OUT, "assets", "places.json"),
-        json.dumps({name: [lat, lng] for name, (lat, lng) in COORDS.items()}, ensure_ascii=False),
+        json.dumps(place_coords(), ensure_ascii=False),
     )
     flag_dir = os.path.join(OUT, "images", "flags")
     os.makedirs(flag_dir, exist_ok=True)
