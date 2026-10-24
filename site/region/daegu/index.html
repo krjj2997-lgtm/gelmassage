@@ -16,8 +16,10 @@
 <meta property="og:url" content="https://outcallmassage.co.kr/region/daegu/">
 
 <meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="대구 마사지 업체 | 콜건마">
+<meta name="twitter:description" content="대구 마사지·스웨디시·출장 업체 48곳의 위치, 가격, 영업시간을 비교하세요.">
 <link rel="icon" href="/assets/favicon.svg">
-<link rel="stylesheet" href="/assets/style.css?v=17">
+<link rel="stylesheet" href="/assets/style.css?v=18">
 
 
 </head>
@@ -73,9 +75,10 @@
   <form method="dialog"><button type="submit">닫기</button></form>
 </dialog>
 <main id="main" class="main-content">
-  <nav class="crumb" aria-label="경로"><a href="/">홈</a> / 대구 마사지 업체</nav>
+  <nav class="crumb" aria-label="경로"><a href="/">홈</a> / <span id="crumb-current">대구 마사지 업체</span></nav>
   <div class="results-header"><h1>대구 마사지 업체</h1></div>
   <p id="result-note" class="result-note">대구에 등록된 마사지 업체 48곳입니다. 사진, 가격, 위치를 보고 카드를 누르면 코스와 영업시간, 연락처를 확인할 수 있습니다.</p>
+  <nav class="place-links" id="place-links" aria-label="세부지역"><a href="?sub=%EB%82%A8%EA%B5%AC">남구</a><a href="?sub=%EB%85%B8%EC%9B%90">노원</a><a href="?sub=%EB%8B%AC%EC%84%9C">달서</a><a href="?sub=%EB%8B%AC%EC%84%B1">달성</a><a href="?sub=%EB%8C%80%EA%B5%AC">대구</a><a href="?sub=%EB%8F%99%EA%B5%AC">동구</a><a href="?sub=%EB%B6%81%EA%B5%AC">북구</a><a href="?sub=%EC%84%9C%EA%B5%AC">서구</a><a href="?sub=%EC%88%98%EC%84%B1">수성</a><a href="?sub=%EC%A4%91%EA%B5%AC">중구</a></nav><nav class="spot-links" id="spot-links" aria-label="동/역" hidden></nav>
   <p id="empty" class="empty" hidden>조건에 맞는 업체가 없습니다. 다른 지역이나 이름으로 다시 찾아보세요.</p>
   <div class="massage-list"><a class="massage-card" href="/shop/47278/" data-q="88타이 대구 신당동 대구 타이마사지 아로마 대구광역시 달서구 신당동 1721-7 (서당로9길 37) / 계명대학교 동문 도보3분 " data-region="대구" data-sub="대구" data-spots="신당동" data-kind="shop" data-lat="35.8765" data-lng="128.6087">
   <div class="card-image"><img class="shop-image" src="/images/%EB%82%A8%ED%8F%AC%EB%8F%99%EB%A7%88%EC%82%AC%EC%A7%80_%EC%B2%AD%EB%8B%B4%ED%85%8C%EB%9D%BC%ED%94%BC.jpg" alt="대구 신당동 88타이 타이마사지 업체 사진" width="400" height="225" loading="eager" fetchpriority="high"><div class="image-overlay"><div class="shop-type">힐링샵</div></div></div>
@@ -605,6 +608,7 @@
     <div class="card-footer"><div class="price"><span class="price-label">최저가</span>100,000원~</div><div class="shop-address-info">대구광역시 동구 신천동 334-11/대구광역시 동구 동부로28길… | 010-4479-3535</div></div>
   </div>
 </a></div>
+  <script type="application/ld+json" id="listing-ld">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "홈", "item": "https://outcallmassage.co.kr/"}, {"@type": "ListItem", "position": 2, "name": "대구 마사지 업체", "item": "https://outcallmassage.co.kr/region/daegu/"}]}</script>
 </main>
 <footer class="foot">
   <div class="foot-inner">
@@ -631,10 +635,18 @@
   };
   if (!sub && !spot && !labels[kind] && !labels[theme]) return;
   var region = document.body.getAttribute("data-region") || "";
-  var topic = labels[theme] || labels[kind] || "마사지";
-  var place = [region, sub, spot].filter(Boolean).join(" ");
-  var title = place + " " + topic + " 업체 | 콜건마";
-  var description = place + " " + topic + " 업체의 위치, 가격, 영업시간을 비교하세요.";
+  var topics = [];
+  if (labels[kind] === "출장마사지") topics.push("출장마사지");
+  if (labels[theme]) topics.push(labels[theme]);
+  else if (labels[kind]) topics.push(labels[kind]);
+  else topics.push("마사지");
+  var bits = [];
+  if (region) bits.push(region);
+  if (sub) bits.push(sub);
+  if (spot) bits.push(spot);
+  var heading = bits.concat(topics).join(" ") + " 업체";
+  var title = heading + " | 콜건마";
+  var description = heading + "의 위치, 가격, 영업시간을 비교하세요.";
   var query = new URLSearchParams();
   if (sub) query.set("sub", sub);
   if (spot) query.set("spot", spot);
@@ -653,11 +665,17 @@
   if (ogDesc) ogDesc.setAttribute("content", description);
   var ogUrl = document.querySelector('meta[property="og:url"]');
   if (ogUrl) ogUrl.setAttribute("content", canon);
-  var heading = document.querySelector("h1");
-  if (heading) heading.textContent = place + " " + topic + " 업체";
+  var twTitle = document.querySelector('meta[name="twitter:title"]');
+  if (twTitle) twTitle.setAttribute("content", title);
+  var twDesc = document.querySelector('meta[name="twitter:description"]');
+  if (twDesc) twDesc.setAttribute("content", description);
+  var headingNode = document.querySelector("#main h1");
+  if (headingNode) headingNode.textContent = heading;
+  var crumb = document.getElementById("crumb-current");
+  if (crumb) crumb.textContent = heading;
 })();
 </script>
 
-<script src="/assets/site.js?v=12" defer></script>
+<script src="/assets/site.js?v=13" defer></script>
 </body>
 </html>

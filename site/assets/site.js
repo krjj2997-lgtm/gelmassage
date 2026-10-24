@@ -127,17 +127,44 @@
     return node ? node.textContent : "";
   }
 
-  function paintLanding(sub, spot) {
+  function esc(value) {
+    return String(value || "").replace(/[&<>"']/g, function (ch) {
+      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch];
+    });
+  }
+
+  function setMeta(selector, attr, value) {
+    var node = document.querySelector(selector);
+    if (node && value) node.setAttribute(attr, value);
+  }
+
+  function landingPhrase(sub, spot) {
+    var topics = [];
+    if (currentKind === "outcall") topics.push("출장마사지");
+    if (themeLabels[currentTheme]) topics.push(themeLabels[currentTheme]);
+    else if (currentKind === "shop") topics.push("마사지");
+    var bits = [];
+    if (page === "region" && pageRegion) bits.push(pageRegion);
+    if (sub) bits.push(sub);
+    if (spot) bits.push(spot);
+    if (!topics.length) topics.push("마사지");
+    return { bits: bits, topics: topics, heading: bits.concat(topics).join(" ") + " 업체" };
+  }
+
+  function paintLanding(sub, spot, count) {
     if (page !== "region" && page !== "all") return;
-    var topic = themeLabels[currentTheme] || themeLabels[currentKind] || "";
-    var place = [pageRegion, sub, spot].filter(Boolean).join(" ");
-    var heading = place || topic ? ((place ? place + " " : "") + (topic || "마사지") + " 업체") : "";
-    var title = heading ? heading + " | 콜건마" : (document.body.getAttribute("data-title") || document.title);
+    var filtered = !!(sub || spot || currentKind || currentTheme);
+    var phrase = landingPhrase(sub, spot);
+    var heading = filtered || page === "region" ? phrase.heading : "";
+    var baseTitle = document.body.getAttribute("data-title") || document.title;
+    var baseHeading = baseTitle.replace(/ \| 콜건마$/, "");
+    if (!filtered && page === "all") heading = "";
+    var title = heading ? heading + " | 콜건마" : baseTitle;
     var description = heading ? heading + "의 위치, 가격, 영업시간을 비교하세요." : (document.body.getAttribute("data-description") || "");
     var query = new URLSearchParams();
     if (sub) query.set("sub", sub);
     if (spot) query.set("spot", spot);
-    if (!currentTheme && themeLabels[currentKind]) query.set("kind", currentKind);
+    if (currentKind === "shop" || currentKind === "outcall") query.set("kind", currentKind);
     if (themeLabels[currentTheme]) query.set("theme", currentTheme);
     var search = query.toString();
     var canon = heading
@@ -145,17 +172,94 @@
       : (document.body.getAttribute("data-canonical") || "");
     document.title = title;
     var h1 = document.querySelector("#main h1");
-    if (h1) h1.textContent = heading || (document.body.getAttribute("data-title") || "").replace(/ \| 콜건마$/, "");
-    var desc = document.querySelector('meta[name="description"]');
-    if (desc && description) desc.setAttribute("content", description);
-    var link = document.querySelector('link[rel="canonical"]');
-    if (link && canon) link.setAttribute("href", canon);
-    var ogTitle = document.querySelector('meta[property="og:title"]');
-    if (ogTitle) ogTitle.setAttribute("content", title);
-    var ogDesc = document.querySelector('meta[property="og:description"]');
-    if (ogDesc && description) ogDesc.setAttribute("content", description);
-    var ogUrl = document.querySelector('meta[property="og:url"]');
-    if (ogUrl && canon) ogUrl.setAttribute("content", canon);
+    if (h1) h1.textContent = heading || baseHeading;
+    setMeta('meta[name="description"]', "content", description);
+    setMeta('link[rel="canonical"]', "href", canon);
+    setMeta('meta[property="og:title"]', "content", title);
+    setMeta('meta[property="og:description"]', "content", description);
+    setMeta('meta[property="og:url"]', "content", canon);
+    setMeta('meta[name="twitter:title"]', "content", title);
+    setMeta('meta[name="twitter:description"]', "content", description);
+    var robots = document.querySelector('meta[name="robots"]');
+    if (robots) robots.setAttribute("content", filtered && count === 0 ? "noindex,follow" : "index,follow");
+    var crumb = document.querySelector(".crumb");
+    if (crumb) {
+      var html = '<a href="/">홈</a>';
+      var path = location.pathname;
+      var trail = [];
+      if (page === "region" && pageRegion) trail.push({ name: pageRegion, href: path });
+      if (sub) trail.push({ name: sub, href: path + "?sub=" + encodeURIComponent(sub) });
+      if (spot) trail.push({ name: spot, href: path + "?" + new URLSearchParams({ sub: sub, spot: spot }).toString() });
+      if (currentKind || currentTheme) phrase.topics.forEach(function (topic) {
+        var params = new URLSearchParams();
+        if (sub) params.set("sub", sub);
+        if (spot) params.set("spot", spot);
+        if (topic === "출장마사지") params.set("kind", "outcall");
+        else if (topic === "마사지" && currentKind === "shop") params.set("kind", "shop");
+        else if (themeLabels[currentTheme] === topic) params.set("theme", currentTheme);
+        var href = path + (params.toString() ? "?" + params.toString() : "");
+        trail.push({ name: topic, href: href });
+      });
+      if (!filtered) {
+        html += ' / <span id="crumb-current">' + esc(baseHeading) + "</span>";
+      } else {
+        trail.forEach(function (item, index) {
+          html += " / ";
+          if (index === trail.length - 1) html += '<span id="crumb-current">' + esc(item.name) + "</span>";
+          else html += '<a href="' + esc(item.href) + '">' + esc(item.name) + "</a>";
+        });
+      }
+      crumb.innerHTML = html;
+    }
+    var ld = document.getElementById("listing-ld");
+    if (ld && crumb) {
+      var names = [];
+      crumb.querySelectorAll("a, span").forEach(function (node) { names.push(node.textContent); });
+      var items = names.map(function (name, index) {
+        return { "@type": "ListItem", position: index + 1, name: name };
+      });
+      if (items[0]) items[0].item = "https://outcallmassage.co.kr/";
+      if (canon && items.length > 1) items[items.length - 1].item = canon;
+      ld.textContent = JSON.stringify({ "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: items });
+    }
+    var placeNav = document.getElementById("place-links");
+    if (placeNav) {
+      placeNav.querySelectorAll("a").forEach(function (link) {
+        var name = link.textContent;
+        var params = new URLSearchParams();
+        params.set("sub", name);
+        if (currentKind) params.set("kind", currentKind);
+        if (currentTheme) params.set("theme", currentTheme);
+        link.setAttribute("href", "?" + params.toString());
+        link.classList.toggle("is-on", name === sub);
+      });
+    }
+    var spotNav = document.getElementById("spot-links");
+    if (spotNav) {
+      var spots = sub ? spotsFor(regionSel ? regionSel.value : pageRegion, sub) : [];
+      if (!spots.length) {
+        spotNav.hidden = true;
+        spotNav.innerHTML = "";
+      } else {
+        spotNav.hidden = false;
+        spotNav.innerHTML = spots.map(function (name) {
+          var params = new URLSearchParams();
+          params.set("sub", sub);
+          params.set("spot", name);
+          if (currentKind) params.set("kind", currentKind);
+          if (currentTheme) params.set("theme", currentTheme);
+          var on = name === spot ? " class=\"is-on\"" : "";
+          return "<a" + on + ' href="?' + params.toString() + '">' + esc(name) + "</a>";
+        }).join("");
+      }
+    }
+    if (note) {
+      if (!filtered) note.textContent = noteBase;
+      else if (count === 0) note.textContent = heading + "에 해당하는 업체가 없습니다.";
+      else if (spot) note.textContent = heading + " " + count + "곳입니다. 고른 동·역이 먼저 나오고, 이어서 가까운 순입니다.";
+      else if (sub) note.textContent = heading + " " + count + "곳입니다. 고른 세부지역이 먼저 나오고, 이어서 가까운 순입니다.";
+      else note.textContent = heading + " " + count + "곳입니다.";
+    }
   }
 
   function apply(push) {
@@ -190,14 +294,7 @@
       kmNode.textContent = origin && !cards[k].hidden && isFinite(cards[k]._km) ? fmtKm(cards[k]._km) : "";
     }
     if (empty) empty.hidden = shown.length !== 0;
-    paintLanding(sub, spot);
-    if (note) {
-      var label = themeLabels[currentTheme] || themeLabels[currentKind] || "";
-      if (sub) note.textContent = sub + " 업체를 먼저 보여주고, 이어서 가까운 순으로 " + (label ? label + " " : "") + shown.length + "곳입니다.";
-      else if (label) note.textContent = label + " " + shown.length + "곳입니다.";
-      else if (region) note.textContent = region + " 업체 " + shown.length + "곳입니다. 가까운 지역끼리 모아 보여 줍니다.";
-      else note.textContent = noteBase;
-    }
+    paintLanding(sub, spot, shown.length);
     if (push && (page === "region" || page === "all")) {
       var params = new URLSearchParams();
       if (sub) params.set("sub", sub);
@@ -291,6 +388,9 @@
     currentKind = params.get("kind") || "";
     currentTheme = params.get("theme") || "";
     if (currentKind !== "shop" && currentKind !== "outcall") currentKind = "";
+    if (!themeLabels[currentTheme]) currentTheme = "";
+    var themeSel = document.getElementById("sel-theme");
+    if (themeSel) themeSel.value = currentTheme;
     if (input && params.get("q")) input.value = params.get("q");
     if (region) regionSel.value = region;
     fillSelect(subSel, "세부지역", subsFor(regionSel.value), sub);

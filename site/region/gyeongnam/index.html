@@ -16,8 +16,10 @@
 <meta property="og:url" content="https://outcallmassage.co.kr/region/gyeongnam/">
 
 <meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="경남 마사지 업체 | 콜건마">
+<meta name="twitter:description" content="경남 마사지·스웨디시·출장 업체 66곳의 위치, 가격, 영업시간을 비교하세요.">
 <link rel="icon" href="/assets/favicon.svg">
-<link rel="stylesheet" href="/assets/style.css?v=17">
+<link rel="stylesheet" href="/assets/style.css?v=18">
 
 
 </head>
@@ -73,9 +75,10 @@
   <form method="dialog"><button type="submit">닫기</button></form>
 </dialog>
 <main id="main" class="main-content">
-  <nav class="crumb" aria-label="경로"><a href="/">홈</a> / 경남 마사지 업체</nav>
+  <nav class="crumb" aria-label="경로"><a href="/">홈</a> / <span id="crumb-current">경남 마사지 업체</span></nav>
   <div class="results-header"><h1>경남 마사지 업체</h1></div>
   <p id="result-note" class="result-note">경남에 등록된 마사지 업체 66곳입니다. 사진, 가격, 위치를 보고 카드를 누르면 코스와 영업시간, 연락처를 확인할 수 있습니다.</p>
+  <nav class="place-links" id="place-links" aria-label="세부지역"><a href="?sub=%EA%B1%B0%EC%A0%9C">거제</a><a href="?sub=%EA%B1%B0%EC%B0%BD">거창</a><a href="?sub=%EA%B3%A0%EC%84%B1">고성</a><a href="?sub=%EA%B9%80%ED%95%B4">김해</a><a href="?sub=%EB%82%A8%ED%95%B4">남해</a><a href="?sub=%EB%B0%80%EC%96%91">밀양</a><a href="?sub=%EC%82%AC%EC%B2%9C">사천</a><a href="?sub=%EC%82%B0%EC%B2%AD">산청</a><a href="?sub=%EC%96%91%EC%82%B0">양산</a><a href="?sub=%EC%9D%98%EB%A0%B9">의령</a><a href="?sub=%EC%A7%84%EC%A3%BC">진주</a><a href="?sub=%EC%B0%BD%EB%85%95">창녕</a><a href="?sub=%EC%B0%BD%EC%9B%90">창원</a><a href="?sub=%ED%86%B5%EC%98%81">통영</a><a href="?sub=%ED%95%98%EB%8F%99">하동</a><a href="?sub=%ED%95%A8%EC%95%88">함안</a><a href="?sub=%ED%95%A8%EC%96%91">함양</a><a href="?sub=%ED%95%A9%EC%B2%9C">합천</a></nav><nav class="spot-links" id="spot-links" aria-label="동/역" hidden></nav>
   <p id="empty" class="empty" hidden>조건에 맞는 업체가 없습니다. 다른 지역이나 이름으로 다시 찾아보세요.</p>
   <div class="massage-list"><a class="massage-card" href="/shop/50340/" data-q="99타이 진주 상대동 경남 타이마사지 아로마 경상남도 진주시 상대동 310-73/경상남도 진주시 대신로 213/진주소방서119구조대 도보3분 " data-region="경남" data-sub="진주" data-spots="상대동" data-kind="shop" data-lat="35.1866" data-lng="128.1146">
   <div class="card-image"><img class="shop-image" src="/images/%EC%A0%84%EC%A3%BC%EB%A7%88%EC%82%AC%EC%A7%80_%EC%8B%9C%ED%81%AC%EB%A6%BF.jpg" alt="진주 상대동 99타이 타이마사지 업체 사진" width="400" height="225" loading="eager" fetchpriority="high"><div class="image-overlay"><div class="shop-type">힐링샵</div></div></div>
@@ -803,6 +806,7 @@
     <div class="card-footer"><div class="price"><span class="price-label">최저가</span>60,000원~</div><div class="shop-address-info">경상남도 진주시 계동 108/경상남도 진주시 비봉로54번길 6/… | 010-9751-9849</div></div>
   </div>
 </a></div>
+  <script type="application/ld+json" id="listing-ld">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "홈", "item": "https://outcallmassage.co.kr/"}, {"@type": "ListItem", "position": 2, "name": "경남 마사지 업체", "item": "https://outcallmassage.co.kr/region/gyeongnam/"}]}</script>
 </main>
 <footer class="foot">
   <div class="foot-inner">
@@ -829,10 +833,18 @@
   };
   if (!sub && !spot && !labels[kind] && !labels[theme]) return;
   var region = document.body.getAttribute("data-region") || "";
-  var topic = labels[theme] || labels[kind] || "마사지";
-  var place = [region, sub, spot].filter(Boolean).join(" ");
-  var title = place + " " + topic + " 업체 | 콜건마";
-  var description = place + " " + topic + " 업체의 위치, 가격, 영업시간을 비교하세요.";
+  var topics = [];
+  if (labels[kind] === "출장마사지") topics.push("출장마사지");
+  if (labels[theme]) topics.push(labels[theme]);
+  else if (labels[kind]) topics.push(labels[kind]);
+  else topics.push("마사지");
+  var bits = [];
+  if (region) bits.push(region);
+  if (sub) bits.push(sub);
+  if (spot) bits.push(spot);
+  var heading = bits.concat(topics).join(" ") + " 업체";
+  var title = heading + " | 콜건마";
+  var description = heading + "의 위치, 가격, 영업시간을 비교하세요.";
   var query = new URLSearchParams();
   if (sub) query.set("sub", sub);
   if (spot) query.set("spot", spot);
@@ -851,11 +863,17 @@
   if (ogDesc) ogDesc.setAttribute("content", description);
   var ogUrl = document.querySelector('meta[property="og:url"]');
   if (ogUrl) ogUrl.setAttribute("content", canon);
-  var heading = document.querySelector("h1");
-  if (heading) heading.textContent = place + " " + topic + " 업체";
+  var twTitle = document.querySelector('meta[name="twitter:title"]');
+  if (twTitle) twTitle.setAttribute("content", title);
+  var twDesc = document.querySelector('meta[name="twitter:description"]');
+  if (twDesc) twDesc.setAttribute("content", description);
+  var headingNode = document.querySelector("#main h1");
+  if (headingNode) headingNode.textContent = heading;
+  var crumb = document.getElementById("crumb-current");
+  if (crumb) crumb.textContent = heading;
 })();
 </script>
 
-<script src="/assets/site.js?v=12" defer></script>
+<script src="/assets/site.js?v=13" defer></script>
 </body>
 </html>

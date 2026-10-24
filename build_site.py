@@ -1151,10 +1151,18 @@ def listing_seo_script():
   };
   if (!sub && !spot && !labels[kind] && !labels[theme]) return;
   var region = document.body.getAttribute("data-region") || "";
-  var topic = labels[theme] || labels[kind] || "마사지";
-  var place = [region, sub, spot].filter(Boolean).join(" ");
-  var title = place + " " + topic + " 업체 | 콜건마";
-  var description = place + " " + topic + " 업체의 위치, 가격, 영업시간을 비교하세요.";
+  var topics = [];
+  if (labels[kind] === "출장마사지") topics.push("출장마사지");
+  if (labels[theme]) topics.push(labels[theme]);
+  else if (labels[kind]) topics.push(labels[kind]);
+  else topics.push("마사지");
+  var bits = [];
+  if (region) bits.push(region);
+  if (sub) bits.push(sub);
+  if (spot) bits.push(spot);
+  var heading = bits.concat(topics).join(" ") + " 업체";
+  var title = heading + " | 콜건마";
+  var description = heading + "의 위치, 가격, 영업시간을 비교하세요.";
   var query = new URLSearchParams();
   if (sub) query.set("sub", sub);
   if (spot) query.set("spot", spot);
@@ -1173,8 +1181,14 @@ def listing_seo_script():
   if (ogDesc) ogDesc.setAttribute("content", description);
   var ogUrl = document.querySelector('meta[property="og:url"]');
   if (ogUrl) ogUrl.setAttribute("content", canon);
-  var heading = document.querySelector("h1");
-  if (heading) heading.textContent = place + " " + topic + " 업체";
+  var twTitle = document.querySelector('meta[name="twitter:title"]');
+  if (twTitle) twTitle.setAttribute("content", title);
+  var twDesc = document.querySelector('meta[name="twitter:description"]');
+  if (twDesc) twDesc.setAttribute("content", description);
+  var headingNode = document.querySelector("#main h1");
+  if (headingNode) headingNode.textContent = heading;
+  var crumb = document.getElementById("crumb-current");
+  if (crumb) crumb.textContent = heading;
 })();
 </script>
 """
@@ -1204,8 +1218,10 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
 <meta property="og:url" content="{escape(canonical)}">
 {f'<meta property="og:image" content="{escape(og_image)}">' if og_image else ''}
 <meta name="twitter:card" content="{'summary_large_image' if og_image else 'summary'}">
+<meta name="twitter:title" content="{escape(title)}">
+<meta name="twitter:description" content="{desc}">
 <link rel="icon" href="/assets/favicon.svg">
-<link rel="stylesheet" href="/assets/style.css?v=17">
+<link rel="stylesheet" href="/assets/style.css?v=18">
 {extra_head}
 {ld}
 </head>
@@ -1231,7 +1247,7 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
   </div>
 </footer>
 {listing_seo_script() if page in ("region", "all") else ""}
-<script src="/assets/site.js?v=12" defer></script>
+<script src="/assets/site.js?v=13" defer></script>
 </body>
 </html>
 """
@@ -1438,7 +1454,7 @@ def crumb(items):
         if href:
             html.append(f'<a href="{href}">{escape(label)}</a>')
         else:
-            html.append(escape(label))
+            html.append(f'<span id="crumb-current">{escape(label)}</span>')
     html.append("</nav>")
     return "".join(html)
 
@@ -1518,14 +1534,43 @@ def render_home(shops):
     write(os.path.join(OUT, "index.html"), html)
 
 
+def place_nav(region):
+    subs = LOCATION_TREE.get(region) or {}
+    if not subs:
+        return ""
+    links = []
+    for sub in sorted(subs):
+        links.append(f'<a href="{escape(filter_query(sub=sub))}">{escape(sub)}</a>')
+    return (
+        f'<nav class="place-links" id="place-links" aria-label="세부지역">{"".join(links)}</nav>'
+        f'<nav class="spot-links" id="spot-links" aria-label="동/역" hidden></nav>'
+    )
+
+
+def listing_json_ld(h1, canonical):
+    payload = {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {"@type": "ListItem", "position": 1, "name": "홈", "item": ORIGIN + "/"},
+            {"@type": "ListItem", "position": 2, "name": h1, "item": canonical},
+        ],
+    }
+    raw = json.dumps(payload, ensure_ascii=False).replace("<", "\\u003c")
+    return f'<script type="application/ld+json" id="listing-ld">{raw}</script>'
+
+
 def render_listing(shops, title, description, canonical, h1, intro, active="", page="region"):
     cards = "\n".join(card_html(shop, eager=(index == 0 and shop["images"])) for index, shop in enumerate(shops))
+    links = place_nav(active) if page == "region" and active else ""
     body = f"""<main id="main" class="main-content">
   {crumb([("홈", "/"), (h1, "")])}
   <div class="results-header"><h1>{escape(h1)}</h1></div>
   <p id="result-note" class="result-note">{escape(intro)}</p>
+  {links}
   <p id="empty" class="empty" hidden>조건에 맞는 업체가 없습니다. 다른 지역이나 이름으로 다시 찾아보세요.</p>
   <div class="massage-list">{cards}</div>
+  {listing_json_ld(h1, canonical)}
 </main>"""
     return page_shell(title, description, canonical, body, page=page, region=active if page == "region" else "")
 

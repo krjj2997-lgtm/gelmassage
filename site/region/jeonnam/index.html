@@ -16,8 +16,10 @@
 <meta property="og:url" content="https://outcallmassage.co.kr/region/jeonnam/">
 
 <meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="전남 마사지 업체 | 콜건마">
+<meta name="twitter:description" content="전남 마사지·스웨디시·출장 업체 31곳의 위치, 가격, 영업시간을 비교하세요.">
 <link rel="icon" href="/assets/favicon.svg">
-<link rel="stylesheet" href="/assets/style.css?v=17">
+<link rel="stylesheet" href="/assets/style.css?v=18">
 
 
 </head>
@@ -73,9 +75,10 @@
   <form method="dialog"><button type="submit">닫기</button></form>
 </dialog>
 <main id="main" class="main-content">
-  <nav class="crumb" aria-label="경로"><a href="/">홈</a> / 전남 마사지 업체</nav>
+  <nav class="crumb" aria-label="경로"><a href="/">홈</a> / <span id="crumb-current">전남 마사지 업체</span></nav>
   <div class="results-header"><h1>전남 마사지 업체</h1></div>
   <p id="result-note" class="result-note">전남에 등록된 마사지 업체 31곳입니다. 사진, 가격, 위치를 보고 카드를 누르면 코스와 영업시간, 연락처를 확인할 수 있습니다.</p>
+  <nav class="place-links" id="place-links" aria-label="세부지역"><a href="?sub=%EA%B0%95%EC%A7%84">강진</a><a href="?sub=%EA%B3%A0%ED%9D%A5">고흥</a><a href="?sub=%EA%B3%A1%EC%84%B1">곡성</a><a href="?sub=%EA%B4%91%EC%96%91">광양</a><a href="?sub=%EA%B5%AC%EB%A1%80">구례</a><a href="?sub=%EB%82%98%EC%A3%BC">나주</a><a href="?sub=%EB%8B%B4%EC%96%91">담양</a><a href="?sub=%EB%AA%A9%ED%8F%AC">목포</a><a href="?sub=%EB%AC%B4%EC%95%88">무안</a><a href="?sub=%EB%B3%B4%EC%84%B1">보성</a><a href="?sub=%EB%B6%81%EA%B5%AC">북구</a><a href="?sub=%EC%88%9C%EC%B2%9C">순천</a><a href="?sub=%EC%8B%A0%EC%95%88">신안</a><a href="?sub=%EC%97%AC%EC%88%98">여수</a><a href="?sub=%EC%98%81%EA%B4%91">영광</a><a href="?sub=%EC%98%81%EC%95%94">영암</a><a href="?sub=%EC%99%84%EB%8F%84">완도</a><a href="?sub=%EC%9E%A5%EC%84%B1">장성</a><a href="?sub=%EC%9E%A5%ED%9D%A5">장흥</a><a href="?sub=%EC%A7%84%EB%8F%84">진도</a><a href="?sub=%ED%95%A8%ED%8F%89">함평</a><a href="?sub=%ED%95%B4%EB%82%A8">해남</a><a href="?sub=%ED%99%94%EC%88%9C">화순</a></nav><nav class="spot-links" id="spot-links" aria-label="동/역" hidden></nav>
   <p id="empty" class="empty" hidden>조건에 맞는 업체가 없습니다. 다른 지역이나 이름으로 다시 찾아보세요.</p>
   <div class="massage-list"><a class="massage-card" href="/shop/41949/" data-q="L테라피 순천 연향동 전남 스웨디시 마사지 전남광주통합특별시 순천시 연향동 1459-1 (하대석길 82) / 금당공원 도보1분 " data-region="전남" data-sub="순천" data-spots="연향동" data-kind="shop" data-lat="34.9544" data-lng="127.4947">
   <div class="card-image"><img class="shop-image" src="/images/%ED%95%9C%EA%B5%AD.jpg" alt="순천 연향동 L테라피 스웨디시 업체 사진" width="45" height="30" loading="eager" fetchpriority="high"><div class="image-overlay"><div class="shop-type">힐링샵</div></div></div>
@@ -418,6 +421,7 @@
     <div class="card-footer"><div class="price"><span class="price-label">최저가</span>150,000원~</div><div class="shop-address-info">전남광주통합특별시 나주시 송월동 1095-9(예향로 4079)… | 010-9971-6298</div></div>
   </div>
 </a></div>
+  <script type="application/ld+json" id="listing-ld">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "홈", "item": "https://outcallmassage.co.kr/"}, {"@type": "ListItem", "position": 2, "name": "전남 마사지 업체", "item": "https://outcallmassage.co.kr/region/jeonnam/"}]}</script>
 </main>
 <footer class="foot">
   <div class="foot-inner">
@@ -444,10 +448,18 @@
   };
   if (!sub && !spot && !labels[kind] && !labels[theme]) return;
   var region = document.body.getAttribute("data-region") || "";
-  var topic = labels[theme] || labels[kind] || "마사지";
-  var place = [region, sub, spot].filter(Boolean).join(" ");
-  var title = place + " " + topic + " 업체 | 콜건마";
-  var description = place + " " + topic + " 업체의 위치, 가격, 영업시간을 비교하세요.";
+  var topics = [];
+  if (labels[kind] === "출장마사지") topics.push("출장마사지");
+  if (labels[theme]) topics.push(labels[theme]);
+  else if (labels[kind]) topics.push(labels[kind]);
+  else topics.push("마사지");
+  var bits = [];
+  if (region) bits.push(region);
+  if (sub) bits.push(sub);
+  if (spot) bits.push(spot);
+  var heading = bits.concat(topics).join(" ") + " 업체";
+  var title = heading + " | 콜건마";
+  var description = heading + "의 위치, 가격, 영업시간을 비교하세요.";
   var query = new URLSearchParams();
   if (sub) query.set("sub", sub);
   if (spot) query.set("spot", spot);
@@ -466,11 +478,17 @@
   if (ogDesc) ogDesc.setAttribute("content", description);
   var ogUrl = document.querySelector('meta[property="og:url"]');
   if (ogUrl) ogUrl.setAttribute("content", canon);
-  var heading = document.querySelector("h1");
-  if (heading) heading.textContent = place + " " + topic + " 업체";
+  var twTitle = document.querySelector('meta[name="twitter:title"]');
+  if (twTitle) twTitle.setAttribute("content", title);
+  var twDesc = document.querySelector('meta[name="twitter:description"]');
+  if (twDesc) twDesc.setAttribute("content", description);
+  var headingNode = document.querySelector("#main h1");
+  if (headingNode) headingNode.textContent = heading;
+  var crumb = document.getElementById("crumb-current");
+  if (crumb) crumb.textContent = heading;
 })();
 </script>
 
-<script src="/assets/site.js?v=12" defer></script>
+<script src="/assets/site.js?v=13" defer></script>
 </body>
 </html>
