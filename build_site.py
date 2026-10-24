@@ -1269,7 +1269,21 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
 """
 
 
+CARD_CACHE = {}
+
+
 def card_html(shop, eager=False):
+    eager = bool(eager)
+    key = (shop["id"], eager)
+    cached = CARD_CACHE.get(key)
+    if cached is not None:
+        return cached
+    html = render_card(shop, eager)
+    CARD_CACHE[key] = html
+    return html
+
+
+def render_card(shop, eager=False):
     image = shop["images"][0] if shop["images"] else None
     label, klass = badge(shop)
     if image:
@@ -1670,8 +1684,17 @@ def render_regions(shops):
                     continue
                 spot_name = spot_place(name, sub, spot)
                 spot_heading = f"{spot_name}마사지 업체"
+                spot_rows = [
+                    shop for shop in rows
+                    if shop.get("sub") == sub or spot in (shop.get("spots") or ())
+                ]
+                spot_rows.sort(key=lambda shop: (
+                    0 if spot in (shop.get("spots") or ()) else 1,
+                    0 if shop["images"] else 1,
+                    shop["name"],
+                ))
                 spot_html = render_listing(
-                    rows,
+                    spot_rows,
                     f"{spot_heading} | {BRAND}",
                     f"{spot_heading}의 위치, 가격, 영업시간을 비교하세요.",
                     f"{ORIGIN}/region/{slug}/{quote(sub, safe='')}/{quote(spot, safe='')}/",
@@ -1681,7 +1704,6 @@ def render_regions(shops):
                     sub=sub,
                     spot=spot,
                     place=spot_name,
-                    list_src=f"/region/{slug}/{quote(sub, safe='')}/",
                     parent=parent,
                 )
                 write(os.path.join(OUT, "region", slug, sub, spot, "index.html"), spot_html)
