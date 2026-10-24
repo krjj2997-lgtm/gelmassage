@@ -16,8 +16,10 @@
 <meta property="og:url" content="https://outcallmassage.co.kr/region/etc/">
 
 <meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="기타 마사지 업체 | 콜건마">
+<meta name="twitter:description" content="기타 마사지·스웨디시·출장 업체 42곳의 위치, 가격, 영업시간을 비교하세요.">
 <link rel="icon" href="/assets/favicon.svg">
-<link rel="stylesheet" href="/assets/style.css?v=17">
+<link rel="stylesheet" href="/assets/style.css?v=18">
 
 
 </head>
@@ -73,9 +75,10 @@
   <form method="dialog"><button type="submit">닫기</button></form>
 </dialog>
 <main id="main" class="main-content">
-  <nav class="crumb" aria-label="경로"><a href="/">홈</a> / 기타 마사지 업체</nav>
+  <nav class="crumb" aria-label="경로"><a href="/">홈</a> / <span id="crumb-current">기타 마사지 업체</span></nav>
   <div class="results-header"><h1>기타 마사지 업체</h1></div>
   <p id="result-note" class="result-note">기타에 등록된 마사지 업체 42곳입니다. 사진, 가격, 위치를 보고 카드를 누르면 코스와 영업시간, 연락처를 확인할 수 있습니다.</p>
+  <nav class="place-links" id="place-links" aria-label="세부지역"><a href="?sub=%EA%B8%B0%ED%83%80">기타</a></nav><nav class="spot-links" id="spot-links" aria-label="동/역" hidden></nav>
   <p id="empty" class="empty" hidden>조건에 맞는 업체가 없습니다. 다른 지역이나 이름으로 다시 찾아보세요.</p>
   <div class="massage-list"><a class="massage-card" href="/shop/43263/" data-q="1H5만원 홈케어 기타 타이마사지 스웨디시 릴렉싱케어 발관리 아로마  " data-region="기타" data-sub="기타" data-spots="" data-kind="shop">
   <div class="card-image"><img class="shop-image" src="/images/%EC%9A%B8%EC%A3%BC%EA%B5%B0%EB%A7%88%EC%82%AC%EC%A7%80_%EC%B2%AD%EB%8B%B4%ED%83%80%EC%9D%B4%EB%A7%88%EC%82%AC%EC%A7%80.jpg" alt="홈케어 1H5만원 타이마사지 업체 사진" width="400" height="225" loading="eager" fetchpriority="high"><div class="image-overlay"><div class="shop-type">힐링샵</div></div></div>
@@ -539,6 +542,7 @@
     <div class="card-footer"><div class="price"><span class="price-label">최저가</span>10,000원~</div><div class="shop-address-info">남쌤 1인홈케어 | 010-2013-8963</div></div>
   </div>
 </a></div>
+  <script type="application/ld+json" id="listing-ld">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "홈", "item": "https://outcallmassage.co.kr/"}, {"@type": "ListItem", "position": 2, "name": "기타 마사지 업체", "item": "https://outcallmassage.co.kr/region/etc/"}]}</script>
 </main>
 <footer class="foot">
   <div class="foot-inner">
@@ -565,10 +569,18 @@
   };
   if (!sub && !spot && !labels[kind] && !labels[theme]) return;
   var region = document.body.getAttribute("data-region") || "";
-  var topic = labels[theme] || labels[kind] || "마사지";
-  var place = [region, sub, spot].filter(Boolean).join(" ");
-  var title = place + " " + topic + " 업체 | 콜건마";
-  var description = place + " " + topic + " 업체의 위치, 가격, 영업시간을 비교하세요.";
+  var topics = [];
+  if (labels[kind] === "출장마사지") topics.push("출장마사지");
+  if (labels[theme]) topics.push(labels[theme]);
+  else if (labels[kind]) topics.push(labels[kind]);
+  else topics.push("마사지");
+  var bits = [];
+  if (region) bits.push(region);
+  if (sub) bits.push(sub);
+  if (spot) bits.push(spot);
+  var heading = bits.concat(topics).join(" ") + " 업체";
+  var title = heading + " | 콜건마";
+  var description = heading + "의 위치, 가격, 영업시간을 비교하세요.";
   var query = new URLSearchParams();
   if (sub) query.set("sub", sub);
   if (spot) query.set("spot", spot);
@@ -587,11 +599,17 @@
   if (ogDesc) ogDesc.setAttribute("content", description);
   var ogUrl = document.querySelector('meta[property="og:url"]');
   if (ogUrl) ogUrl.setAttribute("content", canon);
-  var heading = document.querySelector("h1");
-  if (heading) heading.textContent = place + " " + topic + " 업체";
+  var twTitle = document.querySelector('meta[name="twitter:title"]');
+  if (twTitle) twTitle.setAttribute("content", title);
+  var twDesc = document.querySelector('meta[name="twitter:description"]');
+  if (twDesc) twDesc.setAttribute("content", description);
+  var headingNode = document.querySelector("#main h1");
+  if (headingNode) headingNode.textContent = heading;
+  var crumb = document.getElementById("crumb-current");
+  if (crumb) crumb.textContent = heading;
 })();
 </script>
 
-<script src="/assets/site.js?v=12" defer></script>
+<script src="/assets/site.js?v=13" defer></script>
 </body>
 </html>

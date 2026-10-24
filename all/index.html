@@ -16,8 +16,10 @@
 <meta property="og:url" content="https://outcallmassage.co.kr/all/">
 
 <meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="전체 마사지 업체 | 콜건마">
+<meta name="twitter:description" content="등록된 마사지·출장 업체를 이름, 지역, 종목으로 검색하고 상세 페이지에서 코스와 연락처를 확인하세요.">
 <link rel="icon" href="/assets/favicon.svg">
-<link rel="stylesheet" href="/assets/style.css?v=17">
+<link rel="stylesheet" href="/assets/style.css?v=18">
 
 
 </head>
@@ -73,9 +75,10 @@
   <form method="dialog"><button type="submit">닫기</button></form>
 </dialog>
 <main id="main" class="main-content">
-  <nav class="crumb" aria-label="경로"><a href="/">홈</a> / 전체 마사지 업체</nav>
+  <nav class="crumb" aria-label="경로"><a href="/">홈</a> / <span id="crumb-current">전체 마사지 업체</span></nav>
   <div class="results-header"><h1>전체 마사지 업체</h1></div>
   <p id="result-note" class="result-note">등록 업체 1427곳입니다. 검색창에 지역, 역, 업체 이름을 입력하면 카드가 바로 걸러집니다.</p>
+  
   <p id="empty" class="empty" hidden>조건에 맞는 업체가 없습니다. 다른 지역이나 이름으로 다시 찾아보세요.</p>
   <div class="massage-list"><a class="massage-card" href="/shop/41647/" data-q="1%스웨디시 원주 단계 강원 로미로미 스웨디시 릴렉싱케어 마사지 강원도 원주시 단계동 1119-3 (천사로 14) / 원주고속버스터미널 도보6분 " data-region="강원" data-sub="원주" data-spots="단계동" data-kind="shop" data-lat="37.3409" data-lng="127.9277">
   <div class="card-image"><img class="shop-image" src="/images/%EA%B2%BD%EA%B8%B0_%EC%84%B1%EB%82%A8_%EC%88%98%EC%A7%84%EB%8F%99_%ED%83%9C%ED%8F%89%EC%97%AD_%EB%8D%94%EA%B3%A0%EC%9D%80%EC%8A%A4%EC%9B%A8%EB%94%94%EC%8B%9C.jpg" alt="원주 단계 1%스웨디시 로미로미 업체 사진" width="400" height="225" loading="eager" fetchpriority="high"><div class="image-overlay"><div class="shop-type">힐링샵</div></div></div>
@@ -15774,6 +15777,7 @@
     <div class="card-footer"><div class="price"><span class="price-label">최저가</span>140,000원~</div><div class="shop-address-info">충청북도 충주시 금릉동 871 (금제9길 20-1) / 제일신협… | 010-9376-1194</div></div>
   </div>
 </a></div>
+  <script type="application/ld+json" id="listing-ld">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "홈", "item": "https://outcallmassage.co.kr/"}, {"@type": "ListItem", "position": 2, "name": "전체 마사지 업체", "item": "https://outcallmassage.co.kr/all/"}]}</script>
 </main>
 <footer class="foot">
   <div class="foot-inner">
@@ -15800,10 +15804,18 @@
   };
   if (!sub && !spot && !labels[kind] && !labels[theme]) return;
   var region = document.body.getAttribute("data-region") || "";
-  var topic = labels[theme] || labels[kind] || "마사지";
-  var place = [region, sub, spot].filter(Boolean).join(" ");
-  var title = place + " " + topic + " 업체 | 콜건마";
-  var description = place + " " + topic + " 업체의 위치, 가격, 영업시간을 비교하세요.";
+  var topics = [];
+  if (labels[kind] === "출장마사지") topics.push("출장마사지");
+  if (labels[theme]) topics.push(labels[theme]);
+  else if (labels[kind]) topics.push(labels[kind]);
+  else topics.push("마사지");
+  var bits = [];
+  if (region) bits.push(region);
+  if (sub) bits.push(sub);
+  if (spot) bits.push(spot);
+  var heading = bits.concat(topics).join(" ") + " 업체";
+  var title = heading + " | 콜건마";
+  var description = heading + "의 위치, 가격, 영업시간을 비교하세요.";
   var query = new URLSearchParams();
   if (sub) query.set("sub", sub);
   if (spot) query.set("spot", spot);
@@ -15822,11 +15834,17 @@
   if (ogDesc) ogDesc.setAttribute("content", description);
   var ogUrl = document.querySelector('meta[property="og:url"]');
   if (ogUrl) ogUrl.setAttribute("content", canon);
-  var heading = document.querySelector("h1");
-  if (heading) heading.textContent = place + " " + topic + " 업체";
+  var twTitle = document.querySelector('meta[name="twitter:title"]');
+  if (twTitle) twTitle.setAttribute("content", title);
+  var twDesc = document.querySelector('meta[name="twitter:description"]');
+  if (twDesc) twDesc.setAttribute("content", description);
+  var headingNode = document.querySelector("#main h1");
+  if (headingNode) headingNode.textContent = heading;
+  var crumb = document.getElementById("crumb-current");
+  if (crumb) crumb.textContent = heading;
 })();
 </script>
 
-<script src="/assets/site.js?v=12" defer></script>
+<script src="/assets/site.js?v=13" defer></script>
 </body>
 </html>

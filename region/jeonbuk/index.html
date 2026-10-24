@@ -16,8 +16,10 @@
 <meta property="og:url" content="https://outcallmassage.co.kr/region/jeonbuk/">
 
 <meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="전북 마사지 업체 | 콜건마">
+<meta name="twitter:description" content="전북 마사지·스웨디시·출장 업체 41곳의 위치, 가격, 영업시간을 비교하세요.">
 <link rel="icon" href="/assets/favicon.svg">
-<link rel="stylesheet" href="/assets/style.css?v=17">
+<link rel="stylesheet" href="/assets/style.css?v=18">
 
 
 </head>
@@ -73,9 +75,10 @@
   <form method="dialog"><button type="submit">닫기</button></form>
 </dialog>
 <main id="main" class="main-content">
-  <nav class="crumb" aria-label="경로"><a href="/">홈</a> / 전북 마사지 업체</nav>
+  <nav class="crumb" aria-label="경로"><a href="/">홈</a> / <span id="crumb-current">전북 마사지 업체</span></nav>
   <div class="results-header"><h1>전북 마사지 업체</h1></div>
   <p id="result-note" class="result-note">전북에 등록된 마사지 업체 41곳입니다. 사진, 가격, 위치를 보고 카드를 누르면 코스와 영업시간, 연락처를 확인할 수 있습니다.</p>
+  <nav class="place-links" id="place-links" aria-label="세부지역"><a href="?sub=%EA%B3%A0%EC%B0%BD">고창</a><a href="?sub=%EA%B5%B0%EC%82%B0">군산</a><a href="?sub=%EA%B9%80%EC%A0%9C">김제</a><a href="?sub=%EB%82%A8%EC%9B%90">남원</a><a href="?sub=%EB%AC%B4%EC%A3%BC">무주</a><a href="?sub=%EB%B6%80%EC%95%88">부안</a><a href="?sub=%EC%88%9C%EC%B0%BD">순창</a><a href="?sub=%EC%99%84%EC%A3%BC">완주</a><a href="?sub=%EC%9D%B5%EC%82%B0">익산</a><a href="?sub=%EC%9E%84%EC%8B%A4">임실</a><a href="?sub=%EC%9E%A5%EC%88%98">장수</a><a href="?sub=%EC%A0%84%EC%A3%BC">전주</a><a href="?sub=%EC%A0%95%EC%9D%8D">정읍</a><a href="?sub=%EC%A7%84%EC%95%88">진안</a></nav><nav class="spot-links" id="spot-links" aria-label="동/역" hidden></nav>
   <p id="empty" class="empty" hidden>조건에 맞는 업체가 없습니다. 다른 지역이나 이름으로 다시 찾아보세요.</p>
   <div class="massage-list"><a class="massage-card" href="/shop/43536/" data-q="789타이 전주 신시가지 전북 타이마사지 아로마 전북특별자치도 전주시 완산구 효자동3가 1644-2 (마전중앙로 10) / KBS 전주방송총국 도보3분 " data-region="전북" data-sub="전주" data-spots="효자동3가|신시가지" data-kind="shop" data-lat="35.8218" data-lng="127.1557">
   <div class="card-image"><img class="shop-image" src="/images/%EC%98%A8%EC%B2%9C%EB%8F%99%EB%A7%88%EC%82%AC%EC%A7%80_%ED%8F%AC%EC%B9%B4%EB%A6%AC%EC%8A%A4%EC%9B%A8%EB%94%94%EC%8B%9C.jpg" alt="전주 신시가지 789타이 타이마사지 업체 사진" width="400" height="225" loading="eager" fetchpriority="high"><div class="image-overlay"><div class="shop-type">힐링샵</div></div></div>
@@ -528,6 +531,7 @@
     <div class="card-footer"><div class="price"><span class="price-label">최저가</span>50,000원~</div><div class="shop-address-info">전북 전주시 완산구 효자동3가 1529-6 (홍산북로 59-11… | 010-5885-5026</div></div>
   </div>
 </a></div>
+  <script type="application/ld+json" id="listing-ld">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "홈", "item": "https://outcallmassage.co.kr/"}, {"@type": "ListItem", "position": 2, "name": "전북 마사지 업체", "item": "https://outcallmassage.co.kr/region/jeonbuk/"}]}</script>
 </main>
 <footer class="foot">
   <div class="foot-inner">
@@ -554,10 +558,18 @@
   };
   if (!sub && !spot && !labels[kind] && !labels[theme]) return;
   var region = document.body.getAttribute("data-region") || "";
-  var topic = labels[theme] || labels[kind] || "마사지";
-  var place = [region, sub, spot].filter(Boolean).join(" ");
-  var title = place + " " + topic + " 업체 | 콜건마";
-  var description = place + " " + topic + " 업체의 위치, 가격, 영업시간을 비교하세요.";
+  var topics = [];
+  if (labels[kind] === "출장마사지") topics.push("출장마사지");
+  if (labels[theme]) topics.push(labels[theme]);
+  else if (labels[kind]) topics.push(labels[kind]);
+  else topics.push("마사지");
+  var bits = [];
+  if (region) bits.push(region);
+  if (sub) bits.push(sub);
+  if (spot) bits.push(spot);
+  var heading = bits.concat(topics).join(" ") + " 업체";
+  var title = heading + " | 콜건마";
+  var description = heading + "의 위치, 가격, 영업시간을 비교하세요.";
   var query = new URLSearchParams();
   if (sub) query.set("sub", sub);
   if (spot) query.set("spot", spot);
@@ -576,11 +588,17 @@
   if (ogDesc) ogDesc.setAttribute("content", description);
   var ogUrl = document.querySelector('meta[property="og:url"]');
   if (ogUrl) ogUrl.setAttribute("content", canon);
-  var heading = document.querySelector("h1");
-  if (heading) heading.textContent = place + " " + topic + " 업체";
+  var twTitle = document.querySelector('meta[name="twitter:title"]');
+  if (twTitle) twTitle.setAttribute("content", title);
+  var twDesc = document.querySelector('meta[name="twitter:description"]');
+  if (twDesc) twDesc.setAttribute("content", description);
+  var headingNode = document.querySelector("#main h1");
+  if (headingNode) headingNode.textContent = heading;
+  var crumb = document.getElementById("crumb-current");
+  if (crumb) crumb.textContent = heading;
 })();
 </script>
 
-<script src="/assets/site.js?v=12" defer></script>
+<script src="/assets/site.js?v=13" defer></script>
 </body>
 </html>

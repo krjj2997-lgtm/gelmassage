@@ -747,6 +747,27 @@ button.map-label.is-selected { border-color: #c46a58; box-shadow: 0 0 0 3px rgba
 }
 .crumb { font-size: .82rem; color: #777; margin-bottom: 10px; }
 .crumb a { color: #2f6f62; text-decoration: none; }
+.place-links, .spot-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 14px;
+}
+.place-links a, .spot-links a {
+  color: #3d4458;
+  background: #f6f3ee;
+  border: 1px solid #e4ddd2;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: .82rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+.place-links a.is-on, .spot-links a.is-on {
+  color: #fff;
+  background: #5c4d7a;
+  border-color: #5c4d7a;
+}
 .result-note { color: #2f6f62; font-size: .88rem; margin: 0 0 12px; }
 .detail { padding-top: 12px; padding-bottom: 28px; }
 .detail-cover {
