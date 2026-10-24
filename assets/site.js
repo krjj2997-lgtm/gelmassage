@@ -199,8 +199,6 @@
     if (note) {
       if (!filtered) note.textContent = noteBase;
       else if (count === 0) note.textContent = heading + "에 해당하는 업체가 없습니다.";
-      else if (spot) note.textContent = heading + " " + count + "곳입니다. 고른 동·역이 먼저 나오고, 이어서 가까운 순입니다.";
-      else if (sub) note.textContent = heading + " " + count + "곳입니다. 고른 세부지역이 먼저 나오고, 이어서 가까운 순입니다.";
       else note.textContent = heading + " " + count + "곳입니다.";
     }
   }
