@@ -22,6 +22,16 @@
   var noteBase = note ? note.textContent : "";
   var page = document.body.getAttribute("data-page") || "";
   var pageRegion = document.body.getAttribute("data-region") || "";
+  var themeLabels = {
+    shop: "마사지",
+    outcall: "출장마사지",
+    "스웨디시": "스웨디시",
+    "타이": "타이마사지",
+    "아로마": "아로마마사지",
+    "왁싱": "왁싱",
+    "중국": "중국마사지",
+    "발마사지": "발마사지"
+  };
   var tree = {};
   var places = {};
   var currentKind = "";
@@ -117,6 +127,37 @@
     return node ? node.textContent : "";
   }
 
+  function paintLanding(sub, spot) {
+    if (page !== "region" && page !== "all") return;
+    var topic = themeLabels[currentTheme] || themeLabels[currentKind] || "";
+    var place = [pageRegion, sub, spot].filter(Boolean).join(" ");
+    var heading = place || topic ? ((place ? place + " " : "") + (topic || "마사지") + " 업체") : "";
+    var title = heading ? heading + " | 콜건마" : (document.body.getAttribute("data-title") || document.title);
+    var description = heading ? heading + "의 위치, 가격, 영업시간을 비교하세요." : (document.body.getAttribute("data-description") || "");
+    var query = new URLSearchParams();
+    if (sub) query.set("sub", sub);
+    if (spot) query.set("spot", spot);
+    if (!currentTheme && themeLabels[currentKind]) query.set("kind", currentKind);
+    if (themeLabels[currentTheme]) query.set("theme", currentTheme);
+    var search = query.toString();
+    var canon = heading
+      ? "https://outcallmassage.co.kr" + location.pathname + (search ? "?" + search : "")
+      : (document.body.getAttribute("data-canonical") || "");
+    document.title = title;
+    var h1 = document.querySelector("#main h1");
+    if (h1) h1.textContent = heading || (document.body.getAttribute("data-title") || "").replace(/ \| 콜건마$/, "");
+    var desc = document.querySelector('meta[name="description"]');
+    if (desc && description) desc.setAttribute("content", description);
+    var link = document.querySelector('link[rel="canonical"]');
+    if (link && canon) link.setAttribute("href", canon);
+    var ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) ogTitle.setAttribute("content", title);
+    var ogDesc = document.querySelector('meta[property="og:description"]');
+    if (ogDesc && description) ogDesc.setAttribute("content", description);
+    var ogUrl = document.querySelector('meta[property="og:url"]');
+    if (ogUrl && canon) ogUrl.setAttribute("content", canon);
+  }
+
   function apply(push) {
     if (!regionSel) return;
     var region = regionSel.value;
@@ -149,8 +190,9 @@
       kmNode.textContent = origin && !cards[k].hidden && isFinite(cards[k]._km) ? fmtKm(cards[k]._km) : "";
     }
     if (empty) empty.hidden = shown.length !== 0;
+    paintLanding(sub, spot);
     if (note) {
-      var label = currentTheme || (currentKind === "outcall" ? "출장마사지" : currentKind === "shop" ? "마사지" : "");
+      var label = themeLabels[currentTheme] || themeLabels[currentKind] || "";
       if (sub) note.textContent = sub + " 업체를 먼저 보여주고, 이어서 가까운 순으로 " + (label ? label + " " : "") + shown.length + "곳입니다.";
       else if (label) note.textContent = label + " " + shown.length + "곳입니다.";
       else if (region) note.textContent = region + " 업체 " + shown.length + "곳입니다. 가까운 지역끼리 모아 보여 줍니다.";

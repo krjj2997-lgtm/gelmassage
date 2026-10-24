@@ -6,7 +6,7 @@ import os
 import re
 import shutil
 from html import escape
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "gelmsg", "market_full.json")
@@ -984,10 +984,20 @@ CHEVRON_ICON = (
 THEMES = (
     ("스웨디시", "스웨디시"),
     ("타이", "타이마사지"),
-    ("아로마", "아로마"),
+    ("아로마", "아로마마사지"),
     ("왁싱", "왁싱"),
     ("중국", "중국마사지"),
     ("발마사지", "발마사지"),
+)
+SITEMAP_FILTERS = (
+    ("shop", ""),
+    ("outcall", ""),
+    ("", "스웨디시"),
+    ("", "타이"),
+    ("", "아로마"),
+    ("", "왁싱"),
+    ("", "중국"),
+    ("", "발마사지"),
 )
 
 
@@ -1121,6 +1131,55 @@ def finder_bar(page, active=""):
 </dialog>"""
 
 
+def listing_seo_script():
+    return """<script>
+(function () {
+  var params = new URLSearchParams(location.search);
+  var sub = params.get("sub") || "";
+  var spot = params.get("spot") || "";
+  var kind = params.get("kind") || "";
+  var theme = params.get("theme") || "";
+  var labels = {
+    shop: "마사지",
+    outcall: "출장마사지",
+    "스웨디시": "스웨디시",
+    "타이": "타이마사지",
+    "아로마": "아로마마사지",
+    "왁싱": "왁싱",
+    "중국": "중국마사지",
+    "발마사지": "발마사지"
+  };
+  if (!sub && !spot && !labels[kind] && !labels[theme]) return;
+  var region = document.body.getAttribute("data-region") || "";
+  var topic = labels[theme] || labels[kind] || "마사지";
+  var place = [region, sub, spot].filter(Boolean).join(" ");
+  var title = place + " " + topic + " 업체 | 콜건마";
+  var description = place + " " + topic + " 업체의 위치, 가격, 영업시간을 비교하세요.";
+  var query = new URLSearchParams();
+  if (sub) query.set("sub", sub);
+  if (spot) query.set("spot", spot);
+  if (labels[kind]) query.set("kind", kind);
+  if (labels[theme]) query.set("theme", theme);
+  var search = query.toString();
+  var canon = "https://outcallmassage.co.kr" + location.pathname + (search ? "?" + search : "");
+  document.title = title;
+  var desc = document.querySelector('meta[name="description"]');
+  if (desc) desc.setAttribute("content", description);
+  var link = document.querySelector('link[rel="canonical"]');
+  if (link) link.setAttribute("href", canon);
+  var ogTitle = document.querySelector('meta[property="og:title"]');
+  if (ogTitle) ogTitle.setAttribute("content", title);
+  var ogDesc = document.querySelector('meta[property="og:description"]');
+  if (ogDesc) ogDesc.setAttribute("content", description);
+  var ogUrl = document.querySelector('meta[property="og:url"]');
+  if (ogUrl) ogUrl.setAttribute("content", canon);
+  var heading = document.querySelector("h1");
+  if (heading) heading.textContent = place + " " + topic + " 업체";
+})();
+</script>
+"""
+
+
 def page_shell(title, description, canonical, body, json_ld=None, robots="index,follow", og_image="", page="shop", region="", extra_head=""):
     ld = ""
     if json_ld:
@@ -1150,7 +1209,7 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
 {extra_head}
 {ld}
 </head>
-<body data-page="{escape(page)}" data-region="{escape(region)}">
+<body data-page="{escape(page)}" data-region="{escape(region)}" data-title="{escape(title)}" data-description="{escape(description)}" data-canonical="{escape(canonical)}">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="header" role="banner">
   <div class="header-content">
@@ -1171,7 +1230,8 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
     <p>© {BRAND}</p>
   </div>
 </footer>
-<script src="/assets/site.js?v=11" defer></script>
+{listing_seo_script() if page in ("region", "all") else ""}
+<script src="/assets/site.js?v=12" defer></script>
 </body>
 </html>
 """
@@ -1932,6 +1992,41 @@ def place_coords():
     return coords
 
 
+def filter_query(sub="", spot="", kind="", theme=""):
+    pairs = []
+    if sub:
+        pairs.append(("sub", sub))
+    if spot:
+        pairs.append(("spot", spot))
+    if kind:
+        pairs.append(("kind", kind))
+    if theme:
+        pairs.append(("theme", theme))
+    if not pairs:
+        return ""
+    return "?" + urlencode(pairs, quote_via=quote)
+
+
+def filter_page_urls(shops):
+    live = {shop["region"] for shop in shops}
+    found = []
+    for name, slug in REGIONS:
+        if name not in live:
+            continue
+        base = f"{ORIGIN}/region/{slug}/"
+        for kind, theme in SITEMAP_FILTERS:
+            found.append(base + filter_query(kind=kind, theme=theme))
+        for sub, spots in (LOCATION_TREE.get(name) or {}).items():
+            found.append(base + filter_query(sub=sub))
+            for kind, theme in SITEMAP_FILTERS:
+                found.append(base + filter_query(sub=sub, kind=kind, theme=theme))
+            for spot in spots:
+                found.append(base + filter_query(sub=sub, spot=spot))
+                for kind, theme in SITEMAP_FILTERS:
+                    found.append(base + filter_query(sub=sub, spot=spot, kind=kind, theme=theme))
+    return found
+
+
 def main():
     global LOCATION_TREE
     if os.path.isdir(OUT):
@@ -1975,6 +2070,7 @@ def main():
     for name, slug in REGIONS:
         if any(shop["region"] == name for shop in shops):
             urls.append(f"{ORIGIN}/region/{slug}/")
+    urls.extend(filter_page_urls(shops))
     attach_near(shops)
     for shop in shops:
         urls.append(render_shop(shop))

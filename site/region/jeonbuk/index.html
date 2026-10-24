@@ -21,7 +21,7 @@
 
 
 </head>
-<body data-page="region" data-region="전북">
+<body data-page="region" data-region="전북" data-title="전북 마사지 업체 | 콜건마" data-description="전북 마사지·스웨디시·출장 업체 41곳의 위치, 가격, 영업시간을 비교하세요." data-canonical="https://outcallmassage.co.kr/region/jeonbuk/">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="header" role="banner">
   <div class="header-content">
@@ -60,7 +60,7 @@
 <section class="filter-section">
   <div class="filter-container">
     <button type="button" class="filter-btn active" id="chip-all" data-kind="" data-theme="">전체</button><button type="button" class="filter-btn" id="chip-shop" data-kind="shop" data-theme="">마사지</button><button type="button" class="filter-btn" id="chip-outcall" data-kind="outcall" data-theme="">출장마사지</button>
-    <select id="sel-theme" class="theme-select" aria-label="테마보기"><option value="">테마보기</option><option value="스웨디시">스웨디시</option><option value="타이">타이마사지</option><option value="아로마">아로마</option><option value="왁싱">왁싱</option><option value="중국">중국마사지</option><option value="발마사지">발마사지</option></select>
+    <select id="sel-theme" class="theme-select" aria-label="테마보기"><option value="">테마보기</option><option value="스웨디시">스웨디시</option><option value="타이">타이마사지</option><option value="아로마">아로마마사지</option><option value="왁싱">왁싱</option><option value="중국">중국마사지</option><option value="발마사지">발마사지</option></select>
     <button type="button" class="filter-btn" id="related-info">관련정보</button>
   </div>
 </section>
@@ -535,6 +535,52 @@
     <p>© 콜건마</p>
   </div>
 </footer>
-<script src="/assets/site.js?v=11" defer></script>
+<script>
+(function () {
+  var params = new URLSearchParams(location.search);
+  var sub = params.get("sub") || "";
+  var spot = params.get("spot") || "";
+  var kind = params.get("kind") || "";
+  var theme = params.get("theme") || "";
+  var labels = {
+    shop: "마사지",
+    outcall: "출장마사지",
+    "스웨디시": "스웨디시",
+    "타이": "타이마사지",
+    "아로마": "아로마마사지",
+    "왁싱": "왁싱",
+    "중국": "중국마사지",
+    "발마사지": "발마사지"
+  };
+  if (!sub && !spot && !labels[kind] && !labels[theme]) return;
+  var region = document.body.getAttribute("data-region") || "";
+  var topic = labels[theme] || labels[kind] || "마사지";
+  var place = [region, sub, spot].filter(Boolean).join(" ");
+  var title = place + " " + topic + " 업체 | 콜건마";
+  var description = place + " " + topic + " 업체의 위치, 가격, 영업시간을 비교하세요.";
+  var query = new URLSearchParams();
+  if (sub) query.set("sub", sub);
+  if (spot) query.set("spot", spot);
+  if (labels[kind]) query.set("kind", kind);
+  if (labels[theme]) query.set("theme", theme);
+  var search = query.toString();
+  var canon = "https://outcallmassage.co.kr" + location.pathname + (search ? "?" + search : "");
+  document.title = title;
+  var desc = document.querySelector('meta[name="description"]');
+  if (desc) desc.setAttribute("content", description);
+  var link = document.querySelector('link[rel="canonical"]');
+  if (link) link.setAttribute("href", canon);
+  var ogTitle = document.querySelector('meta[property="og:title"]');
+  if (ogTitle) ogTitle.setAttribute("content", title);
+  var ogDesc = document.querySelector('meta[property="og:description"]');
+  if (ogDesc) ogDesc.setAttribute("content", description);
+  var ogUrl = document.querySelector('meta[property="og:url"]');
+  if (ogUrl) ogUrl.setAttribute("content", canon);
+  var heading = document.querySelector("h1");
+  if (heading) heading.textContent = place + " " + topic + " 업체";
+})();
+</script>
+
+<script src="/assets/site.js?v=12" defer></script>
 </body>
 </html>
