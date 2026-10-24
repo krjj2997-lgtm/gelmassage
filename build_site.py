@@ -1139,6 +1139,13 @@ def listing_seo_script():
   var spot = params.get("spot") || "";
   var kind = params.get("kind") || "";
   var theme = params.get("theme") || "";
+  var parts = location.pathname.split("/").filter(Boolean);
+  if (parts.length === 2 && parts[0] === "region" && sub) {
+    params.delete("sub");
+    var rest = params.toString();
+    location.replace("/region/" + parts[1] + "/" + encodeURIComponent(sub) + "/" + (rest ? "?" + rest : ""));
+    return;
+  }
   var labels = {
     shop: "마사지",
     outcall: "출장마사지",
@@ -1149,22 +1156,17 @@ def listing_seo_script():
     "중국": "중국마사지",
     "발마사지": "발마사지"
   };
+  var embedded = document.body.getAttribute("data-sub") || "";
+  if (!sub && embedded) sub = embedded;
   if (!sub && !spot && !labels[kind] && !labels[theme]) return;
   var region = document.body.getAttribute("data-region") || "";
-  var topics = [];
-  if (labels[kind] === "출장마사지") topics.push("출장마사지");
-  if (labels[theme]) topics.push(labels[theme]);
-  else if (labels[kind]) topics.push(labels[kind]);
-  else topics.push("마사지");
-  var bits = [];
-  if (region) bits.push(region);
-  if (sub) bits.push(sub);
-  if (spot) bits.push(spot);
-  var heading = bits.concat(topics).join(" ") + " 업체";
+  var topic = labels[theme] || (labels[kind] === "출장마사지" ? "출장마사지" : "마사지");
+  var place = spot || sub || region;
+  var heading = place + topic + " 업체";
   var title = heading + " | 콜건마";
   var description = heading + "의 위치, 가격, 영업시간을 비교하세요.";
   var query = new URLSearchParams();
-  if (sub) query.set("sub", sub);
+  if (sub && sub !== embedded) query.set("sub", sub);
   if (spot) query.set("spot", spot);
   if (labels[kind]) query.set("kind", kind);
   if (labels[theme]) query.set("theme", theme);
@@ -1194,7 +1196,7 @@ def listing_seo_script():
 """
 
 
-def page_shell(title, description, canonical, body, json_ld=None, robots="index,follow", og_image="", page="shop", region="", extra_head=""):
+def page_shell(title, description, canonical, body, json_ld=None, robots="index,follow", og_image="", page="shop", region="", sub="", extra_head=""):
     ld = ""
     if json_ld:
         payload = json.dumps(json_ld, ensure_ascii=False).replace("<", "\\u003c")
@@ -1221,11 +1223,11 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
 <meta name="twitter:title" content="{escape(title)}">
 <meta name="twitter:description" content="{desc}">
 <link rel="icon" href="/assets/favicon.svg">
-<link rel="stylesheet" href="/assets/style.css?v=18">
+<link rel="stylesheet" href="/assets/style.css?v=19">
 {extra_head}
 {ld}
 </head>
-<body data-page="{escape(page)}" data-region="{escape(region)}" data-title="{escape(title)}" data-description="{escape(description)}" data-canonical="{escape(canonical)}">
+<body data-page="{escape(page)}" data-region="{escape(region)}" data-sub="{escape(sub)}" data-title="{escape(title)}" data-description="{escape(description)}" data-canonical="{escape(canonical)}">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="header" role="banner">
   <div class="header-content">
@@ -1247,7 +1249,7 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
   </div>
 </footer>
 {listing_seo_script() if page in ("region", "all") else ""}
-<script src="/assets/site.js?v=13" defer></script>
+<script src="/assets/site.js?v=14" defer></script>
 </body>
 </html>
 """
@@ -1534,19 +1536,6 @@ def render_home(shops):
     write(os.path.join(OUT, "index.html"), html)
 
 
-def place_nav(region):
-    subs = LOCATION_TREE.get(region) or {}
-    if not subs:
-        return ""
-    links = []
-    for sub in sorted(subs):
-        links.append(f'<a href="{escape(filter_query(sub=sub))}">{escape(sub)}</a>')
-    return (
-        f'<nav class="place-links" id="place-links" aria-label="세부지역">{"".join(links)}</nav>'
-        f'<nav class="spot-links" id="spot-links" aria-label="동/역" hidden></nav>'
-    )
-
-
 def listing_json_ld(h1, canonical):
     payload = {
         "@context": "https://schema.org",
@@ -1560,19 +1549,22 @@ def listing_json_ld(h1, canonical):
     return f'<script type="application/ld+json" id="listing-ld">{raw}</script>'
 
 
-def render_listing(shops, title, description, canonical, h1, intro, active="", page="region"):
+def render_listing(shops, title, description, canonical, h1, intro, active="", page="region", sub=""):
     cards = "\n".join(card_html(shop, eager=(index == 0 and shop["images"])) for index, shop in enumerate(shops))
-    links = place_nav(active) if page == "region" and active else ""
+    slug = next((item for name, item in REGIONS if name == active), "")
+    if sub and slug:
+        trail = [("홈", "/"), (f"{active} 마사지 업체", f"/region/{slug}/"), (h1, "")]
+    else:
+        trail = [("홈", "/"), (h1, "")]
     body = f"""<main id="main" class="main-content">
-  {crumb([("홈", "/"), (h1, "")])}
+  {crumb(trail)}
   <div class="results-header"><h1>{escape(h1)}</h1></div>
   <p id="result-note" class="result-note">{escape(intro)}</p>
-  {links}
   <p id="empty" class="empty" hidden>조건에 맞는 업체가 없습니다. 다른 지역이나 이름으로 다시 찾아보세요.</p>
   <div class="massage-list">{cards}</div>
   {listing_json_ld(h1, canonical)}
 </main>"""
-    return page_shell(title, description, canonical, body, page=page, region=active if page == "region" else "")
+    return page_shell(title, description, canonical, body, page=page, region=active if page == "region" else "", sub=sub)
 
 
 def render_regions(shops):
@@ -1595,6 +1587,22 @@ def render_regions(shops):
             active=name,
         )
         write(os.path.join(OUT, "region", slug, "index.html"), html)
+        for sub in sorted(LOCATION_TREE.get(name) or {}):
+            if any(ch in sub for ch in '<>:"/\\|?*'):
+                continue
+            heading = f"{sub}마사지 업체"
+            sub_intro = f"{heading}를 먼저 보여주고, 이어서 가까운 {name} 업체를 보여 줍니다."
+            sub_html = render_listing(
+                rows,
+                f"{heading} | {BRAND}",
+                f"{heading}의 위치, 가격, 영업시간을 비교하세요.",
+                f"{ORIGIN}/region/{slug}/{quote(sub, safe='')}/",
+                heading,
+                sub_intro,
+                active=name,
+                sub=sub,
+            )
+            write(os.path.join(OUT, "region", slug, sub, "index.html"), sub_html)
 
 
 def render_all(shops):
@@ -2062,13 +2070,14 @@ def filter_page_urls(shops):
         for kind, theme in SITEMAP_FILTERS:
             found.append(base + filter_query(kind=kind, theme=theme))
         for sub, spots in (LOCATION_TREE.get(name) or {}).items():
-            found.append(base + filter_query(sub=sub))
+            sub_base = f"{base}{quote(sub, safe='')}/"
+            found.append(sub_base)
             for kind, theme in SITEMAP_FILTERS:
-                found.append(base + filter_query(sub=sub, kind=kind, theme=theme))
+                found.append(sub_base + filter_query(kind=kind, theme=theme))
             for spot in spots:
-                found.append(base + filter_query(sub=sub, spot=spot))
+                found.append(sub_base + filter_query(spot=spot))
                 for kind, theme in SITEMAP_FILTERS:
-                    found.append(base + filter_query(sub=sub, spot=spot, kind=kind, theme=theme))
+                    found.append(sub_base + filter_query(spot=spot, kind=kind, theme=theme))
     return found
 
 

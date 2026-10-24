@@ -19,11 +19,11 @@
 <meta name="twitter:title" content="충남 마사지 업체 | 콜건마">
 <meta name="twitter:description" content="충남 마사지·스웨디시·출장 업체 28곳의 위치, 가격, 영업시간을 비교하세요.">
 <link rel="icon" href="/assets/favicon.svg">
-<link rel="stylesheet" href="/assets/style.css?v=18">
+<link rel="stylesheet" href="/assets/style.css?v=19">
 
 
 </head>
-<body data-page="region" data-region="충남" data-title="충남 마사지 업체 | 콜건마" data-description="충남 마사지·스웨디시·출장 업체 28곳의 위치, 가격, 영업시간을 비교하세요." data-canonical="https://outcallmassage.co.kr/region/chungnam/">
+<body data-page="region" data-region="충남" data-sub="" data-title="충남 마사지 업체 | 콜건마" data-description="충남 마사지·스웨디시·출장 업체 28곳의 위치, 가격, 영업시간을 비교하세요." data-canonical="https://outcallmassage.co.kr/region/chungnam/">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="header" role="banner">
   <div class="header-content">
@@ -78,7 +78,6 @@
   <nav class="crumb" aria-label="경로"><a href="/">홈</a> / <span id="crumb-current">충남 마사지 업체</span></nav>
   <div class="results-header"><h1>충남 마사지 업체</h1></div>
   <p id="result-note" class="result-note">충남에 등록된 마사지 업체 28곳입니다. 사진, 가격, 위치를 보고 카드를 누르면 코스와 영업시간, 연락처를 확인할 수 있습니다.</p>
-  <nav class="place-links" id="place-links" aria-label="세부지역"><a href="?sub=%EA%B3%84%EB%A3%A1">계룡</a><a href="?sub=%EA%B3%B5%EC%A3%BC">공주</a><a href="?sub=%EA%B8%88%EC%82%B0">금산</a><a href="?sub=%EB%85%BC%EC%82%B0">논산</a><a href="?sub=%EB%8B%B9%EC%A7%84">당진</a><a href="?sub=%EB%B3%B4%EB%A0%B9">보령</a><a href="?sub=%EB%B6%80%EC%97%AC">부여</a><a href="?sub=%EC%84%9C%EC%82%B0">서산</a><a href="?sub=%EC%84%9C%EC%B2%9C">서천</a><a href="?sub=%EC%95%84%EC%82%B0">아산</a><a href="?sub=%EC%98%88%EC%82%B0">예산</a><a href="?sub=%EC%B2%9C%EC%95%88">천안</a><a href="?sub=%EC%B2%AD%EC%96%91">청양</a><a href="?sub=%ED%83%9C%EC%95%88">태안</a><a href="?sub=%ED%99%8D%EC%84%B1">홍성</a></nav><nav class="spot-links" id="spot-links" aria-label="동/역" hidden></nav>
   <p id="empty" class="empty" hidden>조건에 맞는 업체가 없습니다. 다른 지역이나 이름으로 다시 찾아보세요.</p>
   <div class="massage-list"><a class="massage-card" href="/shop/54229/" data-q="14만한국스웨디시 천안 성정 충남 스웨디시 릴렉싱케어 마사지 충청남도 천안시 서북구 성정동 1347/충청남도 천안시 서북구 성정공원6길 36/롯데마트 성정점 도보8분 " data-region="충남" data-sub="천안" data-spots="성정동" data-kind="shop" data-lat="36.8139" data-lng="127.1217">
   <div class="card-image"><img class="shop-image" src="/images/%EC%9B%90%EC%A3%BC%EB%A7%88%EC%82%AC%EC%A7%80_%EB%8D%94%ED%82%B9%EC%8A%A4%EC%9B%A8%EB%94%94%EC%8B%9C.jpg" alt="천안 성정 14만한국스웨디시 업체 사진" width="400" height="225" loading="eager" fetchpriority="high"><div class="image-overlay"><div class="shop-type">힐링샵</div></div></div>
@@ -403,6 +402,13 @@
   var spot = params.get("spot") || "";
   var kind = params.get("kind") || "";
   var theme = params.get("theme") || "";
+  var parts = location.pathname.split("/").filter(Boolean);
+  if (parts.length === 2 && parts[0] === "region" && sub) {
+    params.delete("sub");
+    var rest = params.toString();
+    location.replace("/region/" + parts[1] + "/" + encodeURIComponent(sub) + "/" + (rest ? "?" + rest : ""));
+    return;
+  }
   var labels = {
     shop: "마사지",
     outcall: "출장마사지",
@@ -413,22 +419,17 @@
     "중국": "중국마사지",
     "발마사지": "발마사지"
   };
+  var embedded = document.body.getAttribute("data-sub") || "";
+  if (!sub && embedded) sub = embedded;
   if (!sub && !spot && !labels[kind] && !labels[theme]) return;
   var region = document.body.getAttribute("data-region") || "";
-  var topics = [];
-  if (labels[kind] === "출장마사지") topics.push("출장마사지");
-  if (labels[theme]) topics.push(labels[theme]);
-  else if (labels[kind]) topics.push(labels[kind]);
-  else topics.push("마사지");
-  var bits = [];
-  if (region) bits.push(region);
-  if (sub) bits.push(sub);
-  if (spot) bits.push(spot);
-  var heading = bits.concat(topics).join(" ") + " 업체";
+  var topic = labels[theme] || (labels[kind] === "출장마사지" ? "출장마사지" : "마사지");
+  var place = spot || sub || region;
+  var heading = place + topic + " 업체";
   var title = heading + " | 콜건마";
   var description = heading + "의 위치, 가격, 영업시간을 비교하세요.";
   var query = new URLSearchParams();
-  if (sub) query.set("sub", sub);
+  if (sub && sub !== embedded) query.set("sub", sub);
   if (spot) query.set("spot", spot);
   if (labels[kind]) query.set("kind", kind);
   if (labels[theme]) query.set("theme", theme);
@@ -456,6 +457,6 @@
 })();
 </script>
 
-<script src="/assets/site.js?v=13" defer></script>
+<script src="/assets/site.js?v=14" defer></script>
 </body>
 </html>
