@@ -50,7 +50,12 @@
 
   function spotsFor(region, sub) {
     if (!region || !sub || !tree[region] || !tree[region][sub]) return [];
-    return tree[region][sub];
+    return tree[region][sub].slice().sort(function (a, b) {
+      var stationA = a.charAt(a.length - 1) === "역" ? 1 : 0;
+      var stationB = b.charAt(b.length - 1) === "역" ? 1 : 0;
+      if (stationA !== stationB) return stationA - stationB;
+      return a.localeCompare(b, "ko");
+    });
   }
 
   function point(name) {

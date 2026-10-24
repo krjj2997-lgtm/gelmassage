@@ -1021,6 +1021,10 @@ def badge(shop):
     return "힐링샵", "shop-type"
 
 
+def spot_sort_key(name):
+    return (name.endswith("역"), name)
+
+
 def location_tree(shops):
     tree = {}
     for shop in shops:
@@ -1039,7 +1043,7 @@ def location_tree(shops):
         if name not in tree:
             continue
         subs = tree[name]
-        ordered[name] = {sub: sorted(subs[sub]) for sub in sorted(subs)}
+        ordered[name] = {sub: sorted(subs[sub], key=spot_sort_key) for sub in sorted(subs)}
     return ordered
 
 
@@ -1167,7 +1171,7 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
     <p>© {BRAND}</p>
   </div>
 </footer>
-<script src="/assets/site.js?v=10" defer></script>
+<script src="/assets/site.js?v=11" defer></script>
 </body>
 </html>
 """
