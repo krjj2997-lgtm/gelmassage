@@ -140,7 +140,12 @@
 
   function landingPhrase(sub, spot) {
     var topic = themeLabels[currentTheme] || (currentKind === "outcall" ? "출장마사지" : "마사지");
-    var place = spot || sub || "";
+    var embeddedSub = document.body.getAttribute("data-sub") || "";
+    var embeddedSpot = document.body.getAttribute("data-spot") || "";
+    var embeddedPlace = document.body.getAttribute("data-place") || "";
+    var place = "";
+    if (embeddedPlace && (sub || "") === embeddedSub && (spot || "") === embeddedSpot && (sub || spot)) place = embeddedPlace;
+    else place = spot || sub || "";
     if (place) return place + topic + " 업체";
     if (currentKind || currentTheme) return (page === "region" ? pageRegion : "") + topic + " 업체";
     return "";
@@ -200,8 +205,13 @@
     }
   }
 
+  function reloadCards() {
+    cards = list ? list.querySelectorAll(".massage-card") : [];
+  }
+
   function apply(push) {
     if (!regionSel) return;
+    reloadCards();
     var region = regionSel.value;
     var sub = subSel ? subSel.value : "";
     var spot = spotSel ? spotSel.value : "";
@@ -235,9 +245,10 @@
     paintLanding(sub, spot, shown.length);
     if (push && (page === "region" || page === "all")) {
       var embeddedSub = document.body.getAttribute("data-sub") || "";
+      var embeddedSpot = document.body.getAttribute("data-spot") || "";
       var params = new URLSearchParams();
       if (sub && sub !== embeddedSub) params.set("sub", sub);
-      if (spot) params.set("spot", spot);
+      if (spot && spot !== embeddedSpot) params.set("spot", spot);
       if (currentKind) params.set("kind", currentKind);
       if (currentTheme) params.set("theme", currentTheme);
       if (input && input.value.trim()) params.set("q", input.value.trim());
@@ -333,14 +344,28 @@
         apply(true);
       });
     }
-    if (spotSel) spotSel.addEventListener("change", function () { apply(true); });
+    if (spotSel) spotSel.addEventListener("change", function () {
+      if (page === "region" && regionSlug() && subSel && subSel.value) {
+        var extra = new URLSearchParams();
+        if (currentKind) extra.set("kind", currentKind);
+        if (currentTheme) extra.set("theme", currentTheme);
+        if (input && input.value.trim()) extra.set("q", input.value.trim());
+        var tail = extra.toString();
+        var next = "/region/" + regionSlug() + "/" + encodeURIComponent(subSel.value) + "/";
+        if (spotSel.value) next += encodeURIComponent(spotSel.value) + "/";
+        location.href = next + (tail ? "?" + tail : "");
+        return;
+      }
+      apply(true);
+    });
     if (input && page !== "home") input.addEventListener("input", function () { apply(false); });
 
     var params = new URLSearchParams(location.search);
     var region = page === "region" ? pageRegion : (params.get("region") || "");
     var pageSub = document.body.getAttribute("data-sub") || "";
+    var pageSpot = document.body.getAttribute("data-spot") || "";
     var sub = params.get("sub") || pageSub;
-    var spot = params.get("spot") || "";
+    var spot = params.get("spot") || pageSpot;
     currentKind = params.get("kind") || "";
     currentTheme = params.get("theme") || "";
     if (currentKind !== "shop" && currentKind !== "outcall") currentKind = "";
@@ -447,9 +472,19 @@
 
   if (!regionSel && !input) return;
   if (regionSel) regionSel.addEventListener("change", goRegion);
+  var listFrom = document.body.getAttribute("data-list") || "";
+  var listReady = Promise.resolve();
+  if (list && listFrom && !list.querySelector(".massage-card")) {
+    listReady = fetch(listFrom).then(function (response) { return response.text(); }).then(function (html) {
+      var parsed = new DOMParser().parseFromString(html, "text/html");
+      var remote = parsed.querySelector(".massage-list");
+      if (remote) list.innerHTML = remote.innerHTML;
+    }).catch(function () {});
+  }
   Promise.all([
     fetch("/assets/locations.json?v=2").then(function (response) { return response.json(); }),
-    fetch("/assets/places.json?v=2").then(function (response) { return response.json(); })
+    fetch("/assets/places.json?v=2").then(function (response) { return response.json(); }),
+    listReady
   ]).then(function (rows) {
     tree = rows[0] || {};
     places = rows[1] || {};

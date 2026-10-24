@@ -1140,10 +1140,21 @@ def listing_seo_script():
   var kind = params.get("kind") || "";
   var theme = params.get("theme") || "";
   var parts = location.pathname.split("/").filter(Boolean);
-  if (parts.length === 2 && parts[0] === "region" && sub) {
+  if (parts[0] === "region" && parts.length === 2 && sub) {
+    var path = "/region/" + parts[1] + "/" + encodeURIComponent(sub) + "/";
     params.delete("sub");
+    if (spot) {
+      path += encodeURIComponent(spot) + "/";
+      params.delete("spot");
+    }
     var rest = params.toString();
-    location.replace("/region/" + parts[1] + "/" + encodeURIComponent(sub) + "/" + (rest ? "?" + rest : ""));
+    location.replace(path + (rest ? "?" + rest : ""));
+    return;
+  }
+  if (parts[0] === "region" && parts.length === 3 && spot) {
+    params.delete("spot");
+    var spotRest = params.toString();
+    location.replace(location.pathname.replace(/\/?$/, "/") + encodeURIComponent(spot) + "/" + (spotRest ? "?" + spotRest : ""));
     return;
   }
   var labels = {
@@ -1157,17 +1168,20 @@ def listing_seo_script():
     "발마사지": "발마사지"
   };
   var embedded = document.body.getAttribute("data-sub") || "";
+  var embeddedSpot = document.body.getAttribute("data-spot") || "";
+  var placeLabel = document.body.getAttribute("data-place") || "";
   if (!sub && embedded) sub = embedded;
+  if (!spot && embeddedSpot) spot = embeddedSpot;
   if (!sub && !spot && !labels[kind] && !labels[theme]) return;
   var region = document.body.getAttribute("data-region") || "";
   var topic = labels[theme] || (labels[kind] === "출장마사지" ? "출장마사지" : "마사지");
-  var place = spot || sub || region;
+  var place = (placeLabel && sub === embedded && spot === embeddedSpot) ? placeLabel : (spot || sub || region);
   var heading = place + topic + " 업체";
   var title = heading + " | 콜건마";
   var description = heading + "의 위치, 가격, 영업시간을 비교하세요.";
   var query = new URLSearchParams();
   if (sub && sub !== embedded) query.set("sub", sub);
-  if (spot) query.set("spot", spot);
+  if (spot && spot !== embeddedSpot) query.set("spot", spot);
   if (labels[kind]) query.set("kind", kind);
   if (labels[theme]) query.set("theme", theme);
   var search = query.toString();
@@ -1196,7 +1210,7 @@ def listing_seo_script():
 """
 
 
-def page_shell(title, description, canonical, body, json_ld=None, robots="index,follow", og_image="", page="shop", region="", sub="", extra_head=""):
+def page_shell(title, description, canonical, body, json_ld=None, robots="index,follow", og_image="", page="shop", region="", sub="", spot="", place="", list_src="", extra_head=""):
     ld = ""
     if json_ld:
         payload = json.dumps(json_ld, ensure_ascii=False).replace("<", "\\u003c")
@@ -1227,7 +1241,7 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
 {extra_head}
 {ld}
 </head>
-<body data-page="{escape(page)}" data-region="{escape(region)}" data-sub="{escape(sub)}" data-title="{escape(title)}" data-description="{escape(description)}" data-canonical="{escape(canonical)}">
+<body data-page="{escape(page)}" data-region="{escape(region)}" data-sub="{escape(sub)}" data-spot="{escape(spot)}" data-place="{escape(place)}" data-list="{escape(list_src)}" data-title="{escape(title)}" data-description="{escape(description)}" data-canonical="{escape(canonical)}">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="header" role="banner">
   <div class="header-content">
@@ -1249,7 +1263,7 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
   </div>
 </footer>
 {listing_seo_script() if page in ("region", "all") else ""}
-<script src="/assets/site.js?v=14" defer></script>
+<script src="/assets/site.js?v=15" defer></script>
 </body>
 </html>
 """
@@ -1549,10 +1563,45 @@ def listing_json_ld(h1, canonical):
     return f'<script type="application/ld+json" id="listing-ld">{raw}</script>'
 
 
-def render_listing(shops, title, description, canonical, h1, intro, active="", page="region", sub=""):
-    cards = "\n".join(card_html(shop, eager=(index == 0 and shop["images"])) for index, shop in enumerate(shops))
+def path_segment(name):
+    if not name or name in (".", ".."):
+        return ""
+    if any(ch in name for ch in '<>:"/\\|?*') or name.endswith((" ", ".")):
+        return ""
+    return name
+
+
+def place_labels(tree):
+    sub_regions = {}
+    spot_places = {}
+    for region, subs in tree.items():
+        for sub, spots in subs.items():
+            sub_regions.setdefault(sub, set()).add(region)
+            for spot in spots:
+                spot_places.setdefault(spot, set()).add((region, sub))
+
+    def sub_place(region, sub):
+        if len(sub_regions.get(sub) or ()) > 1:
+            return f"{region} {sub}"
+        return sub
+
+    def spot_place(region, sub, spot):
+        pairs = spot_places.get(spot) or set()
+        if len(pairs) <= 1:
+            return spot
+        if len({item_region for item_region, item_sub in pairs if item_sub == sub}) == 1:
+            return f"{sub} {spot}"
+        return f"{region} {sub} {spot}"
+
+    return sub_place, spot_place
+
+
+def render_listing(shops, title, description, canonical, h1, intro, active="", page="region", sub="", spot="", place="", list_src="", parent=None):
+    cards = "" if list_src else "\n".join(card_html(shop, eager=(index == 0 and shop["images"])) for index, shop in enumerate(shops))
     slug = next((item for name, item in REGIONS if name == active), "")
-    if sub and slug:
+    if spot and sub and slug and parent:
+        trail = [("홈", "/"), (f"{active} 마사지 업체", f"/region/{slug}/"), parent, (h1, "")]
+    elif sub and slug:
         trail = [("홈", "/"), (f"{active} 마사지 업체", f"/region/{slug}/"), (h1, "")]
     else:
         trail = [("홈", "/"), (h1, "")]
@@ -1564,7 +1613,15 @@ def render_listing(shops, title, description, canonical, h1, intro, active="", p
   <div class="massage-list">{cards}</div>
   {listing_json_ld(h1, canonical)}
 </main>"""
-    return page_shell(title, description, canonical, body, page=page, region=active if page == "region" else "", sub=sub)
+    return page_shell(
+        title, description, canonical, body,
+        page=page,
+        region=active if page == "region" else "",
+        sub=sub,
+        spot=spot,
+        place=place,
+        list_src=list_src,
+    )
 
 
 def render_regions(shops):
@@ -1587,22 +1644,47 @@ def render_regions(shops):
             active=name,
         )
         write(os.path.join(OUT, "region", slug, "index.html"), html)
+        sub_place, spot_place = place_labels(LOCATION_TREE)
         for sub in sorted(LOCATION_TREE.get(name) or {}):
-            if any(ch in sub for ch in '<>:"/\\|?*'):
+            if not path_segment(sub):
                 continue
-            heading = f"{sub}마사지 업체"
+            place = sub_place(name, sub)
+            heading = f"{place}마사지 업체"
             sub_intro = f"{heading}를 먼저 보여주고, 이어서 가까운 {name} 업체를 보여 줍니다."
+            sub_canon = f"{ORIGIN}/region/{slug}/{quote(sub, safe='')}/"
             sub_html = render_listing(
                 rows,
                 f"{heading} | {BRAND}",
                 f"{heading}의 위치, 가격, 영업시간을 비교하세요.",
-                f"{ORIGIN}/region/{slug}/{quote(sub, safe='')}/",
+                sub_canon,
                 heading,
                 sub_intro,
                 active=name,
                 sub=sub,
+                place=place,
             )
             write(os.path.join(OUT, "region", slug, sub, "index.html"), sub_html)
+            parent = (heading, f"/region/{slug}/{quote(sub, safe='')}/")
+            for spot in LOCATION_TREE[name][sub]:
+                if not path_segment(spot):
+                    continue
+                spot_name = spot_place(name, sub, spot)
+                spot_heading = f"{spot_name}마사지 업체"
+                spot_html = render_listing(
+                    rows,
+                    f"{spot_heading} | {BRAND}",
+                    f"{spot_heading}의 위치, 가격, 영업시간을 비교하세요.",
+                    f"{ORIGIN}/region/{slug}/{quote(sub, safe='')}/{quote(spot, safe='')}/",
+                    spot_heading,
+                    f"{spot_heading}를 먼저 보여주고, 이어서 가까운 {name} 업체를 보여 줍니다.",
+                    active=name,
+                    sub=sub,
+                    spot=spot,
+                    place=spot_name,
+                    list_src=f"/region/{slug}/{quote(sub, safe='')}/",
+                    parent=parent,
+                )
+                write(os.path.join(OUT, "region", slug, sub, spot, "index.html"), spot_html)
 
 
 def render_all(shops):
@@ -2075,9 +2157,12 @@ def filter_page_urls(shops):
             for kind, theme in SITEMAP_FILTERS:
                 found.append(sub_base + filter_query(kind=kind, theme=theme))
             for spot in spots:
-                found.append(sub_base + filter_query(spot=spot))
+                if not path_segment(spot):
+                    continue
+                spot_base = f"{sub_base}{quote(spot, safe='')}/"
+                found.append(spot_base)
                 for kind, theme in SITEMAP_FILTERS:
-                    found.append(sub_base + filter_query(spot=spot, kind=kind, theme=theme))
+                    found.append(spot_base + filter_query(kind=kind, theme=theme))
     return found
 
 
