@@ -23,7 +23,7 @@
 
 
 </head>
-<body data-page="region" data-region="대구" data-sub="대구" data-title="대구마사지 업체 | 콜건마" data-description="대구마사지 업체의 위치, 가격, 영업시간을 비교하세요." data-canonical="https://outcallmassage.co.kr/region/daegu/%EB%8C%80%EA%B5%AC/">
+<body data-page="region" data-region="대구" data-sub="대구" data-spot="" data-place="대구" data-list="" data-title="대구마사지 업체 | 콜건마" data-description="대구마사지 업체의 위치, 가격, 영업시간을 비교하세요." data-canonical="https://outcallmassage.co.kr/region/daegu/%EB%8C%80%EA%B5%AC/">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="header" role="banner">
   <div class="header-content">
@@ -623,10 +623,21 @@
   var kind = params.get("kind") || "";
   var theme = params.get("theme") || "";
   var parts = location.pathname.split("/").filter(Boolean);
-  if (parts.length === 2 && parts[0] === "region" && sub) {
+  if (parts[0] === "region" && parts.length === 2 && sub) {
+    var path = "/region/" + parts[1] + "/" + encodeURIComponent(sub) + "/";
     params.delete("sub");
+    if (spot) {
+      path += encodeURIComponent(spot) + "/";
+      params.delete("spot");
+    }
     var rest = params.toString();
-    location.replace("/region/" + parts[1] + "/" + encodeURIComponent(sub) + "/" + (rest ? "?" + rest : ""));
+    location.replace(path + (rest ? "?" + rest : ""));
+    return;
+  }
+  if (parts[0] === "region" && parts.length === 3 && spot) {
+    params.delete("spot");
+    var spotRest = params.toString();
+    location.replace(location.pathname.replace(/\/?$/, "/") + encodeURIComponent(spot) + "/" + (spotRest ? "?" + spotRest : ""));
     return;
   }
   var labels = {
@@ -640,17 +651,20 @@
     "발마사지": "발마사지"
   };
   var embedded = document.body.getAttribute("data-sub") || "";
+  var embeddedSpot = document.body.getAttribute("data-spot") || "";
+  var placeLabel = document.body.getAttribute("data-place") || "";
   if (!sub && embedded) sub = embedded;
+  if (!spot && embeddedSpot) spot = embeddedSpot;
   if (!sub && !spot && !labels[kind] && !labels[theme]) return;
   var region = document.body.getAttribute("data-region") || "";
   var topic = labels[theme] || (labels[kind] === "출장마사지" ? "출장마사지" : "마사지");
-  var place = spot || sub || region;
+  var place = (placeLabel && sub === embedded && spot === embeddedSpot) ? placeLabel : (spot || sub || region);
   var heading = place + topic + " 업체";
   var title = heading + " | 콜건마";
   var description = heading + "의 위치, 가격, 영업시간을 비교하세요.";
   var query = new URLSearchParams();
   if (sub && sub !== embedded) query.set("sub", sub);
-  if (spot) query.set("spot", spot);
+  if (spot && spot !== embeddedSpot) query.set("spot", spot);
   if (labels[kind]) query.set("kind", kind);
   if (labels[theme]) query.set("theme", theme);
   var search = query.toString();
@@ -677,6 +691,6 @@
 })();
 </script>
 
-<script src="/assets/site.js?v=14" defer></script>
+<script src="/assets/site.js?v=15" defer></script>
 </body>
 </html>
