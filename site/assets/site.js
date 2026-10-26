@@ -97,6 +97,13 @@
   }
 
   function originPoint(sub, spot) {
+    var olat = Number(document.body.getAttribute("data-olat"));
+    var olng = Number(document.body.getAttribute("data-olng"));
+    var embeddedSub = document.body.getAttribute("data-sub") || "";
+    var embeddedSpot = document.body.getAttribute("data-spot") || "";
+    if (olat && olng && (sub || "") === embeddedSub && (spot || "") === embeddedSpot && (spot || sub)) {
+      return { lat: olat, lng: olng };
+    }
     if (spot && point(spot)) return point(spot);
     if (sub && point(sub)) return point(sub);
     return null;
@@ -199,6 +206,7 @@
     if (note) {
       if (!filtered) note.textContent = noteBase;
       else if (count === 0) note.textContent = heading + "에 해당하는 업체가 없습니다.";
+      else if (spot) note.textContent = spot + "에서 가까운 " + (document.body.getAttribute("data-sub") || "") + " 업체 " + count + "곳입니다.";
       else note.textContent = heading + " " + count + "곳입니다.";
     }
   }

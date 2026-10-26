@@ -72,6 +72,49 @@ COORDS = {
     "사천": (35.003, 128.064), "장유": (35.191, 128.813),
     "제주": (33.499, 126.531), "서귀포": (33.254, 126.560),
 }
+# (지역, 세부지역, 동/역) 좌표. 같은 이름이 다른 지역에 있으면 여기만 둔다.
+AREA_POINTS = {
+    ("서울", "강남", "개포동"): (37.482, 127.057),
+    ("서울", "강남", "역삼동"): (37.495, 127.037),
+    ("서울", "강남", "논현동"): (37.511, 127.029),
+    ("서울", "강남", "삼성동"): (37.514, 127.063),
+    ("서울", "강남", "대치동"): (37.494, 127.063),
+    ("서울", "강남", "신사동"): (37.524, 127.023),
+    ("서울", "강남", "청담동"): (37.525, 127.049),
+    ("서울", "강남", "압구정동"): (37.527, 127.028),
+    ("서울", "강남", "도곡동"): (37.491, 127.046),
+    ("서울", "강남", "일원동"): (37.484, 127.084),
+    ("서울", "강남", "일원본동"): (37.483, 127.087),
+    ("서울", "강남", "수서동"): (37.488, 127.102),
+    ("서울", "강남", "세곡동"): (37.465, 127.104),
+    ("서울", "강남", "강남역"): (37.498, 127.028),
+    ("서울", "강남", "역삼역"): (37.501, 127.036),
+    ("서울", "강남", "선릉역"): (37.505, 127.049),
+    ("서울", "강남", "삼성역"): (37.509, 127.063),
+    ("서울", "강남", "신논현역"): (37.505, 127.025),
+    ("서울", "강남", "논현역"): (37.511, 127.021),
+    ("서울", "강남", "신사역"): (37.516, 127.020),
+    ("서울", "강남", "압구정역"): (37.527, 127.028),
+    ("서울", "강남", "압구정로데오역"): (37.527, 127.041),
+    ("서울", "강남", "청담역"): (37.519, 127.053),
+    ("서울", "강남", "학동역"): (37.514, 127.032),
+    ("서울", "강남", "강남구청역"): (37.517, 127.041),
+    ("서울", "강남", "선정릉역"): (37.510, 127.044),
+    ("서울", "강남", "봉은사역"): (37.514, 127.060),
+    ("서울", "강남", "삼성중앙역"): (37.513, 127.053),
+    ("서울", "강남", "언주역"): (37.507, 127.034),
+    ("서울", "강남", "한티역"): (37.496, 127.053),
+    ("서울", "강남", "도곡역"): (37.491, 127.055),
+    ("서울", "강남", "매봉역"): (37.487, 127.047),
+    ("서울", "강남", "대치역"): (37.495, 127.064),
+    ("서울", "강남", "학여울역"): (37.497, 127.071),
+    ("서울", "강남", "대청역"): (37.494, 127.080),
+    ("서울", "강남", "일원역"): (37.484, 127.084),
+    ("서울", "강남", "수서역"): (37.487, 127.102),
+    ("서울", "강남", "대모산입구역"): (37.491, 127.073),
+    ("서울", "강남", "개포동역"): (37.489, 127.066),
+    ("서울", "강남", "구룡역"): (37.487, 127.059),
+}
 
 REGIONS = [
     ("서울", "seoul"),
@@ -1211,12 +1254,14 @@ def listing_seo_script():
 """
 
 
-def page_shell(title, description, canonical, body, json_ld=None, robots="index,follow", og_image="", page="shop", region="", sub="", spot="", place="", list_src="", extra_head=""):
+def page_shell(title, description, canonical, body, json_ld=None, robots="index,follow", og_image="", page="shop", region="", sub="", spot="", place="", list_src="", extra_head="", origin=None):
     ld = ""
     if json_ld:
         payload = json.dumps(json_ld, ensure_ascii=False).replace("<", "\\u003c")
         ld = f'<script type="application/ld+json">{payload}</script>'
     desc = escape(description)
+    olat = "" if not origin else str(origin[0])
+    olng = "" if not origin else str(origin[1])
     return f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -1242,7 +1287,7 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
 {extra_head}
 {ld}
 </head>
-<body data-page="{escape(page)}" data-region="{escape(region)}" data-sub="{escape(sub)}" data-spot="{escape(spot)}" data-place="{escape(place)}" data-list="{escape(list_src)}" data-title="{escape(title)}" data-description="{escape(description)}" data-canonical="{escape(canonical)}">
+<body data-page="{escape(page)}" data-region="{escape(region)}" data-sub="{escape(sub)}" data-spot="{escape(spot)}" data-place="{escape(place)}" data-list="{escape(list_src)}" data-title="{escape(title)}" data-description="{escape(description)}" data-canonical="{escape(canonical)}" data-olat="{olat}" data-olng="{olng}">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="header" role="banner">
   <div class="header-content">
@@ -1264,7 +1309,7 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
   </div>
 </footer>
 {listing_seo_script() if page in ("region", "all") else ""}
-<script src="/assets/site.js?v=18" defer></script>
+<script src="/assets/site.js?v=19" defer></script>
 </body>
 </html>
 """
@@ -1308,7 +1353,7 @@ def render_card(shop, eager=False):
     )
     spots = "|".join(shop.get("spots") or [])
     kind = "outcall" if "outcall" in klass else "shop"
-    located = shop_point(shop)
+    located = shop_anchor(shop)
     latlng = f' data-lat="{located[0]}" data-lng="{located[1]}"' if located else ""
     return f"""<a class="massage-card" href="/shop/{shop["id"]}/" data-q="{escape(query)}" data-region="{escape(shop.get("region") or "")}" data-sub="{escape(shop.get("sub") or "")}" data-spots="{escape(spots)}" data-kind="{kind}"{latlng}>
   <div class="card-image">{media}<div class="image-overlay"><div class="{klass}">{label}</div></div></div>
@@ -1611,7 +1656,7 @@ def place_labels(tree):
     return sub_place, spot_place
 
 
-def render_listing(shops, title, description, canonical, h1, intro, active="", page="region", sub="", spot="", place="", list_src="", parent=None):
+def render_listing(shops, title, description, canonical, h1, intro, active="", page="region", sub="", spot="", place="", list_src="", parent=None, origin=None):
     cards = "" if list_src else "\n".join(card_html(shop, eager=(index == 0 and shop["images"])) for index, shop in enumerate(shops))
     slug = next((item for name, item in REGIONS if name == active), "")
     if spot and sub and slug and parent:
@@ -1638,6 +1683,7 @@ def render_listing(shops, title, description, canonical, h1, intro, active="", p
         place=place,
         list_src=list_src,
         robots=("index,follow" if shops else "noindex,follow") if (sub or spot) else "index,follow",
+        origin=origin,
     )
 
 
@@ -1689,12 +1735,13 @@ def render_regions(shops):
                     continue
                 spot_name = spot_place(name, sub, spot)
                 spot_heading = f"{spot_name}마사지 {TITLE_TAIL}"
-                spot_rows = [
-                    shop for shop in sub_rows
-                    if spot in (shop.get("spots") or ())
-                ]
-                spot_rows.sort(key=lambda shop: (0 if shop["images"] else 1, shop["name"]))
-                spot_intro = f"{spot_heading} {len(spot_rows)}곳입니다." if spot_rows else f"{spot_heading}에 해당하는 업체가 없습니다."
+                origin = place_point(name, sub, spot)
+                spot_rows = list(sub_rows)
+                spot_rows.sort(key=lambda shop: (shop_distance(origin, shop), shop["name"]))
+                spot_intro = (
+                    f"{spot}에서 가까운 {sub} 업체 {len(spot_rows)}곳입니다."
+                    if spot_rows else f"{spot_heading}에 해당하는 업체가 없습니다."
+                )
                 spot_html = render_listing(
                     spot_rows,
                     f"{spot_heading} | {BRAND}",
@@ -1707,6 +1754,7 @@ def render_regions(shops):
                     spot=spot,
                     place=spot_name,
                     parent=parent,
+                    origin=origin,
                 )
                 write(os.path.join(OUT, "region", slug, sub, spot, "index.html"), spot_html)
 
@@ -1812,15 +1860,51 @@ def render_shop(shop):
     return url
 
 
-def shop_point(shop):
-    for label in [shop.get("sub"), *(shop.get("spots") or [])]:
-        if label in COORDS:
-            lat, lng = COORDS[label]
-            shift = sum(ord(ch) for ch in str(shop["id"]))
-            lat += ((shift % 17) - 8) * 0.0011
-            lng += (((shift // 17) % 17) - 8) * 0.0011
-            return round(lat, 5), round(lng, 5)
+def place_point(region, sub, spot):
+    hit = AREA_POINTS.get((region, sub, spot))
+    if hit:
+        return hit
+    if spot in COORDS:
+        return COORDS[spot]
+    if sub in COORDS:
+        return COORDS[sub]
     return None
+
+
+def shop_anchor(shop):
+    region = shop.get("region") or ""
+    sub = shop.get("sub") or ""
+    hits = []
+    for spot in shop.get("spots") or ():
+        point = AREA_POINTS.get((region, sub, spot))
+        if point:
+            hits.append((spot, point))
+    stations = [item for item in hits if str(item[0]).endswith("역")]
+    if stations:
+        return stations[0][1]
+    if hits:
+        return hits[0][1]
+    if sub in COORDS:
+        return COORDS[sub]
+    return None
+
+
+def shop_distance(origin, shop):
+    here = shop_anchor(shop)
+    if not origin or not here:
+        return 9999
+    return km_between(origin, here)
+
+
+def shop_point(shop):
+    anchor = shop_anchor(shop)
+    if not anchor:
+        return None
+    lat, lng = anchor
+    shift = sum(ord(ch) for ch in str(shop["id"]))
+    lat += ((shift % 17) - 8) * 0.0011
+    lng += (((shift // 17) % 17) - 8) * 0.0011
+    return round(lat, 5), round(lng, 5)
 
 
 def km_between(a, b):
@@ -2142,6 +2226,9 @@ def place_coords():
     for region, sub, spot in CATALOG_ROWS:
         sub_regions.setdefault(sub, set()).add(region)
         spot_places.setdefault(spot, set()).add((region, sub))
+    for (region, sub, spot), (lat, lng) in AREA_POINTS.items():
+        if len(spot_places.get(spot) or ()) == 1:
+            coords[spot] = [lat, lng]
     for region, sub, spot in CATALOG_ROWS:
         if spot in coords or len(spot_places[spot]) != 1:
             continue
@@ -2169,11 +2256,6 @@ def filter_query(sub="", spot="", kind="", theme=""):
 def filter_page_urls(shops):
     live = {shop["region"] for shop in shops}
     sub_has = {(shop.get("region"), shop.get("sub")) for shop in shops if shop.get("sub")}
-    spot_has = {
-        (shop.get("region"), shop.get("sub"), spot)
-        for shop in shops
-        for spot in (shop.get("spots") or ())
-    }
     found = []
     for name, slug in REGIONS:
         if name not in live:
@@ -2189,7 +2271,7 @@ def filter_page_urls(shops):
             for kind, theme in SITEMAP_FILTERS:
                 found.append(sub_base + filter_query(kind=kind, theme=theme))
             for spot in spots:
-                if not path_segment(spot) or (name, sub, spot) not in spot_has:
+                if not path_segment(spot):
                     continue
                 spot_base = f"{sub_base}{quote(spot, safe='')}/"
                 found.append(spot_base)
