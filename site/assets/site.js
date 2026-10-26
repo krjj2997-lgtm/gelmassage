@@ -146,8 +146,8 @@
     var place = "";
     if (embeddedPlace && (sub || "") === embeddedSub && (spot || "") === embeddedSpot && (sub || spot)) place = embeddedPlace;
     else place = spot || sub || "";
-    if (place) return place + topic + " 업체";
-    if (currentKind || currentTheme) return (page === "region" ? pageRegion : "") + topic + " 업체";
+    if (place) return place + topic + " 20대,30대 사이트 1위";
+    if (currentKind || currentTheme) return (page === "region" ? pageRegion : "") + topic + " 20대,30대 사이트 1위";
     return "";
   }
 

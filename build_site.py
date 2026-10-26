@@ -18,6 +18,7 @@ WEB = os.path.join(ROOT, "web", "assets")
 OUT = os.path.join(ROOT, "site")
 ORIGIN = "https://outcallmassage.co.kr"
 BRAND = "콜건마"
+TITLE_TAIL = "20대,30대 사이트 1위"
 LOCATION_TREE = {}
 COORDS = {
     "강남": (37.497, 127.028), "서초": (37.483, 127.032), "송파": (37.514, 127.106),
@@ -1176,7 +1177,7 @@ def listing_seo_script():
   var region = document.body.getAttribute("data-region") || "";
   var topic = labels[theme] || (labels[kind] === "출장마사지" ? "출장마사지" : "마사지");
   var place = (placeLabel && sub === embedded && spot === embeddedSpot) ? placeLabel : (spot || sub || region);
-  var heading = place + topic + " 업체";
+  var heading = place + topic + " 20대,30대 사이트 1위";
   var title = heading + " | 콜건마";
   var description = heading + "의 위치, 가격, 영업시간을 비교하세요.";
   var query = new URLSearchParams();
@@ -1263,7 +1264,7 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
   </div>
 </footer>
 {listing_seo_script() if page in ("region", "all") else ""}
-<script src="/assets/site.js?v=16" defer></script>
+<script src="/assets/site.js?v=17" defer></script>
 </body>
 </html>
 """
@@ -1614,9 +1615,9 @@ def render_listing(shops, title, description, canonical, h1, intro, active="", p
     cards = "" if list_src else "\n".join(card_html(shop, eager=(index == 0 and shop["images"])) for index, shop in enumerate(shops))
     slug = next((item for name, item in REGIONS if name == active), "")
     if spot and sub and slug and parent:
-        trail = [("홈", "/"), (f"{active} 마사지 업체", f"/region/{slug}/"), parent, (h1, "")]
+        trail = [("홈", "/"), (f"{active} 마사지 {TITLE_TAIL}", f"/region/{slug}/"), parent, (h1, "")]
     elif sub and slug:
-        trail = [("홈", "/"), (f"{active} 마사지 업체", f"/region/{slug}/"), (h1, "")]
+        trail = [("홈", "/"), (f"{active} 마사지 {TITLE_TAIL}", f"/region/{slug}/"), (h1, "")]
     else:
         trail = [("홈", "/"), (h1, "")]
     empty_hidden = "" if not shops else " hidden"
@@ -1652,10 +1653,10 @@ def render_regions(shops):
         intro = f"{name}에 등록된 마사지 업체 {len(rows)}곳입니다. 사진, 가격, 위치를 보고 카드를 누르면 코스와 영업시간, 연락처를 확인할 수 있습니다."
         html = render_listing(
             rows,
-            f"{name} 마사지 업체 | {BRAND}",
+            f"{name} 마사지 {TITLE_TAIL} | {BRAND}",
             f"{name} 마사지·스웨디시·출장 업체 {len(rows)}곳의 위치, 가격, 영업시간을 비교하세요.",
             f"{ORIGIN}/region/{slug}/",
-            f"{name} 마사지 업체",
+            f"{name} 마사지 {TITLE_TAIL}",
             intro,
             active=name,
         )
@@ -1665,7 +1666,7 @@ def render_regions(shops):
             if not path_segment(sub):
                 continue
             place = sub_place(name, sub)
-            heading = f"{place}마사지 업체"
+            heading = f"{place}마사지 {TITLE_TAIL}"
             sub_rows = [shop for shop in rows if shop.get("sub") == sub]
             sub_rows.sort(key=lambda shop: (0 if shop["images"] else 1, shop["name"]))
             sub_intro = f"{heading} {len(sub_rows)}곳입니다." if sub_rows else f"{heading}에 해당하는 업체가 없습니다."
@@ -1687,7 +1688,7 @@ def render_regions(shops):
                 if not path_segment(spot):
                     continue
                 spot_name = spot_place(name, sub, spot)
-                spot_heading = f"{spot_name}마사지 업체"
+                spot_heading = f"{spot_name}마사지 {TITLE_TAIL}"
                 spot_rows = [
                     shop for shop in sub_rows
                     if spot in (shop.get("spots") or ())
@@ -1714,10 +1715,10 @@ def render_all(shops):
     rows = sorted(shops, key=lambda shop: (shop["region"], shop["name"]))
     html = render_listing(
         rows,
-        f"전체 마사지 업체 | {BRAND}",
+        f"전체 마사지 {TITLE_TAIL} | {BRAND}",
         "등록된 마사지·출장 업체를 이름, 지역, 종목으로 검색하고 상세 페이지에서 코스와 연락처를 확인하세요.",
         ORIGIN + "/all/",
-        "전체 마사지 업체",
+        f"전체 마사지 {TITLE_TAIL}",
         f"등록 업체 {len(rows)}곳입니다. 검색창에 지역, 역, 업체 이름을 입력하면 카드가 바로 걸러집니다.",
         page="all",
     )
