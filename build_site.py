@@ -17,7 +17,7 @@ IMG_SRC = os.path.join(ROOT, "images")
 WEB = os.path.join(ROOT, "web", "assets")
 OUT = os.path.join(ROOT, "site")
 ORIGIN = "https://outcallmassage.co.kr"
-BRAND = "콜건마"
+BRAND = "마사지성지"
 TITLE_TAIL = "20대,30대 사이트 1위"
 LOCATION_TREE = {}
 COORDS = {
@@ -1178,7 +1178,7 @@ def listing_seo_script():
   var topic = labels[theme] || (labels[kind] === "출장마사지" ? "출장마사지" : "마사지");
   var place = (placeLabel && sub === embedded && spot === embeddedSpot) ? placeLabel : (spot || sub || region);
   var heading = place + topic + " 20대,30대 사이트 1위";
-  var title = heading + " | 콜건마";
+  var title = heading + " | 마사지성지";
   var description = heading + "의 위치, 가격, 영업시간을 비교하세요.";
   var query = new URLSearchParams();
   if (sub && sub !== embedded) query.set("sub", sub);
@@ -1264,7 +1264,7 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
   </div>
 </footer>
 {listing_seo_script() if page in ("region", "all") else ""}
-<script src="/assets/site.js?v=17" defer></script>
+<script src="/assets/site.js?v=18" defer></script>
 </body>
 </html>
 """
@@ -1555,7 +1555,7 @@ def render_home(shops):
         },
     ]
     html = page_shell(
-        f"{BRAND} | 지역별 마사지 업체 검색",
+        "마사지성지 20대,30대 사이트 1위 | 건전테라피,스웨디시,아로마마사지,타이마사지",
         "서울·경기·인천·부산 등 지역별 마사지, 스웨디시, 출장 업체의 위치·가격·영업시간과 사진을 비교하고 상세 페이지에서 바로 문의하세요.",
         ORIGIN + "/",
         body,

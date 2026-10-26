@@ -156,9 +156,9 @@
     var filtered = !!(sub || spot || currentKind || currentTheme);
     var heading = landingPhrase(sub, spot);
     var baseTitle = document.body.getAttribute("data-title") || document.title;
-    var baseHeading = baseTitle.replace(/ \| 콜건마$/, "");
+    var baseHeading = baseTitle.replace(/ \| 마사지성지$/, "");
     if (!filtered && page === "all") heading = "";
-    var title = heading ? heading + " | 콜건마" : baseTitle;
+    var title = heading ? heading + " | 마사지성지" : baseTitle;
     var description = heading ? heading + "의 위치, 가격, 영업시간을 비교하세요." : (document.body.getAttribute("data-description") || "");
     var embeddedSub = document.body.getAttribute("data-sub") || "";
     var query = new URLSearchParams();
@@ -400,7 +400,7 @@
     var body = "업체명: " + shopName + "\n지역: " + region + "\n연락처: " + phone + "\n내용: " + note;
     var msg = document.getElementById("auth-msg");
     if (msg) msg.textContent = "메일 앱이 열립니다.";
-    location.href = "mailto:krjj2997@gmail.com?subject=" + encodeURIComponent("콜건마 입점 문의") + "&body=" + encodeURIComponent(body);
+    location.href = "mailto:krjj2997@gmail.com?subject=" + encodeURIComponent("마사지성지 입점 문의") + "&body=" + encodeURIComponent(body);
   });
 
   var menu = document.getElementById("side-menu");
