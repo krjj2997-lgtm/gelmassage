@@ -1132,9 +1132,20 @@ def short_line(text, limit=72):
     return text[: limit - 1].rstrip() + "…"
 
 
+def is_outcall(shop):
+    blob = " ".join([
+        shop.get("title") or "",
+        shop.get("place") or "",
+        shop.get("name") or "",
+        shop.get("service") or "",
+        shop.get("content") or "",
+        shop.get("filename_text") or "",
+    ])
+    return bool(re.search(r"(홈타이|홈케어|출장(?!소))", blob))
+
+
 def badge(shop):
-    blob = " ".join([shop.get("service") or "", shop.get("name") or "", shop.get("filename_text") or ""])
-    if any(word in blob for word in ("출장", "홈타이", "홈케어")):
+    if is_outcall(shop):
         return "출장마사지", "shop-type shop-type-outcall"
     return "힐링샵", "shop-type"
 
@@ -2249,7 +2260,7 @@ def nearby_rows(shops):
             "place": shop.get("place") or shop.get("region") or "",
             "addr": short_line(map_address(shop) or shop.get("address") or shop.get("place") or "", 64),
             "hours": short_line(shop.get("hours") or "", 32),
-            "kind": "outcall" if any(word in blob for word in ("출장", "홈타이", "홈케어")) else "shop",
+            "kind": "outcall" if is_outcall(shop) else "shop",
             "badge": label,
             "one": 1 if re.search(r"1\s*인", blob) else 0,
             "home": 0,
@@ -2307,7 +2318,7 @@ def render_nearby():
   </div>
   <section id="nearby-list" class="nearby-list"></section>
 </main>
-<script src="/assets/nearby.js?v=15"></script>"""
+<script src="/assets/nearby.js?v=16"></script>"""
     html = page_shell(
         f"내주변 지도 | {BRAND}",
         f"현재 위치에서 가까운 마사지 업체를 지도에서 찾아보세요. {BRAND}",
