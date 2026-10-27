@@ -23,6 +23,7 @@
   var leafletCircle = null;
   var picker = document.getElementById("nearby-picker");
   var pickerList = document.getElementById("nearby-picker-list");
+  var suppressMapEvent = false;
 
   function esc(value) {
     return String(value || "").replace(/[&<>"']/g, function (ch) {
@@ -74,6 +75,7 @@
       if (healing && shop.kind !== "shop") continue;
       shop.km = kmBetween(origin, shop);
       if (radius && shop.km > radius) continue;
+      if (!radius && !shopInView(shop)) continue;
       rows.push(shop);
     }
     rows.sort(function (a, b) { return a.km - b.km; });
@@ -122,12 +124,33 @@
     picker.hidden = false;
   }
 
+  function viewBox() {
+    if (usingKakao && kakaoMap && kakaoMap.getBounds) {
+      var bounds = kakaoMap.getBounds();
+      var sw = bounds.getSouthWest();
+      var ne = bounds.getNorthEast();
+      return { south: sw.getLat(), north: ne.getLat(), west: sw.getLng(), east: ne.getLng() };
+    }
+    if (leafletMap && leafletMap.getBounds) {
+      var box = leafletMap.getBounds();
+      return { south: box.getSouth(), north: box.getNorth(), west: box.getWest(), east: box.getEast() };
+    }
+    return null;
+  }
+
+  function shopInView(shop) {
+    var box = viewBox();
+    if (!box) return false;
+    return shop.lat >= box.south && shop.lat <= box.north && shop.lng >= box.west && shop.lng <= box.east;
+  }
+
   function paintList(rows) {
     var where = located ? "내 위치" : "서울역";
-    var title = where + " 기준 가까운 순 " + rows.length + "곳";
-    statusEl.firstChild.textContent = "기준 " + where + " · 가까운 순 " + rows.length + "곳" + (usingKakao ? "" : " · 이 주소는 카카오맵 도메인이 아니라 기본 지도입니다");
+    var title = radius ? where + " 기준 가까운 순 " + rows.length + "곳" : "이 화면 안 " + rows.length + "곳";
+    statusEl.firstChild.textContent = (radius ? "기준 " + where + " · 가까운 순 " : "이 화면 · ") + rows.length + "곳" + (usingKakao ? "" : " · 이 주소는 카카오맵 도메인이 아니라 기본 지도입니다");
     if (!rows.length) {
-      listEl.innerHTML = "<h2>" + title + '</h2><p class="empty">조건에 맞는 업체가 없습니다.</p>';
+      var empty = radius ? "조건에 맞는 업체가 없습니다." : "지도를 넓히면 주변 업체가 보입니다.";
+      listEl.innerHTML = "<h2>" + title + '</h2><p class="empty">' + empty + "</p>";
       return;
     }
     listEl.innerHTML = "<h2>" + esc(title) + "</h2>" + rows.map(function (shop) {
@@ -162,46 +185,37 @@
     });
   }
 
-  function frameMap(rows) {
+  function focusMap() {
     var dLat = radius ? radius / 111 : 0;
     var dLng = radius ? radius / (111 * Math.cos((origin.lat * Math.PI) / 180)) : 0;
+    suppressMapEvent = true;
     if (usingKakao && kakaoMap) {
       if (typeof kakaoMap.relayout === "function") kakaoMap.relayout();
-      if (radius) {
-        var box = new kakao.maps.LatLngBounds(
+      if (!radius) {
+        kakaoMap.setLevel(2);
+        kakaoMap.setCenter(new kakao.maps.LatLng(origin.lat, origin.lng));
+      } else {
+        kakaoMap.setBounds(new kakao.maps.LatLngBounds(
           new kakao.maps.LatLng(origin.lat - dLat, origin.lng - dLng),
           new kakao.maps.LatLng(origin.lat + dLat, origin.lng + dLng)
-        );
-        kakaoMap.setBounds(box);
-        return;
+        ));
       }
-      if (!rows.length) {
-        kakaoMap.setLevel(8);
-        kakaoMap.setCenter(new kakao.maps.LatLng(origin.lat, origin.lng));
-        return;
+    } else if (leafletMap) {
+      leafletMap.invalidateSize();
+      if (!radius) leafletMap.setView([origin.lat, origin.lng], 17);
+      else {
+        leafletMap.fitBounds([
+          [origin.lat - dLat, origin.lng - dLng],
+          [origin.lat + dLat, origin.lng + dLng]
+        ], { padding: [20, 20] });
       }
-      var bounds = new kakao.maps.LatLngBounds();
-      bounds.extend(new kakao.maps.LatLng(origin.lat, origin.lng));
-      for (var i = 0; i < rows.length; i++) bounds.extend(new kakao.maps.LatLng(rows[i].lat, rows[i].lng));
-      kakaoMap.setBounds(bounds);
-      return;
     }
-    if (!leafletMap) return;
-    leafletMap.invalidateSize();
-    if (radius) {
-      leafletMap.fitBounds([
-        [origin.lat - dLat, origin.lng - dLng],
-        [origin.lat + dLat, origin.lng + dLng]
-      ], { padding: [20, 20] });
-      return;
-    }
-    if (!rows.length) {
-      leafletMap.setView([origin.lat, origin.lng], 12);
-      return;
-    }
-    var pts = [[origin.lat, origin.lng]];
-    for (var n = 0; n < rows.length; n++) pts.push([rows[n].lat, rows[n].lng]);
-    leafletMap.fitBounds(pts, { padding: [24, 24] });
+    setTimeout(function () { suppressMapEvent = false; }, 600);
+  }
+
+  function onMapIdle() {
+    if (suppressMapEvent || radius) return;
+    render(false);
   }
 
   function drawPins(rows, fit) {
@@ -283,15 +297,14 @@
         }
       })(groups[i]);
     }
-    if (fit === false) return;
-    frameMap(rows);
   }
 
-  function render() {
+  function render(fit) {
     if (wrap) wrap.classList.remove("is-homecare");
+    if (fit) focusMap();
     var rows = rowsInRange();
     paintList(rows);
-    drawPins(rows);
+    drawPins(rows, false);
   }
 
   function selectShop(id) {
@@ -342,7 +355,7 @@
     if (!button || button.disabled) return;
     radius = Number(button.getAttribute("data-km"));
     mark(radiusBar, "data-km", button.getAttribute("data-km"));
-    render();
+    render(true);
   });
 
   var themeToggle = document.getElementById("nearby-theme-toggle");
@@ -378,18 +391,18 @@
   function locate(fresh) {
     if (!navigator.geolocation) {
       statusEl.firstChild.textContent = "이 브라우저에서는 현재 위치를 쓸 수 없어 서울역 기준으로 보여 줍니다.";
-      render();
+      render(true);
       return;
     }
     statusEl.firstChild.textContent = "현재 위치를 찾는 중입니다.";
     navigator.geolocation.getCurrentPosition(function (pos) {
       located = true;
       origin = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      render();
+      render(true);
     }, function () {
       located = false;
       statusEl.firstChild.textContent = "위치를 허용하지 않아 서울역 기준으로 보여 줍니다.";
-      render();
+      render(true);
     }, { enableHighAccuracy: true, timeout: fresh ? 15000 : 10000, maximumAge: fresh ? 0 : 60000 });
   }
 
@@ -399,12 +412,13 @@
   function bootLeaflet() {
     loadCss("https://unpkg.com/leaflet@1.9.4/dist/leaflet.css");
     return loadScript("https://unpkg.com/leaflet@1.9.4/dist/leaflet.js").then(function () {
-      leafletMap = L.map(mapEl, { scrollWheelZoom: false }).setView([origin.lat, origin.lng], 12);
+      leafletMap = L.map(mapEl, { scrollWheelZoom: true }).setView([origin.lat, origin.lng], 17);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 18,
         attribution: "&copy; OpenStreetMap"
       }).addTo(leafletMap);
       leafletMap.on("click", closePicker);
+      leafletMap.on("moveend", onMapIdle);
     });
   }
 
@@ -422,9 +436,10 @@
           try {
             kakaoMap = new kakao.maps.Map(mapEl, {
               center: new kakao.maps.LatLng(origin.lat, origin.lng),
-              level: 5
+              level: 2
             });
             kakao.maps.event.addListener(kakaoMap, "click", closePicker);
+            kakao.maps.event.addListener(kakaoMap, "idle", onMapIdle);
             usingKakao = true;
             resolve();
           } catch (error) {
