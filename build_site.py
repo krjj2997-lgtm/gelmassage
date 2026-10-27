@@ -1347,7 +1347,7 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
 <meta name="twitter:title" content="{escape(title)}">
 <meta name="twitter:description" content="{desc}">
 <link rel="icon" href="/assets/favicon.svg">
-<link rel="stylesheet" href="/assets/style.css?v=19">
+<link rel="stylesheet" href="/assets/style.css?v=20">
 {extra_head}
 {ld}
 </head>
@@ -2090,7 +2090,43 @@ def nearby_anchor(shop):
     return REGION_POINT.get(region)
 
 
+ADDRESS_POINTS = {}
+
+
+def load_address_points():
+    global ADDRESS_POINTS
+    path = os.path.join(ROOT, "gelmsg", "address_points.json")
+    if not os.path.isfile(path):
+        ADDRESS_POINTS = {}
+        return
+    with open(path, encoding="utf-8") as handle:
+        ADDRESS_POINTS = json.load(handle)
+
+
+def geocoded_point(shop):
+    query = map_address(shop).strip()
+    if not re.search(r"([가-힣]{1,12}(?:특별시|광역시|특별자치도|시|군|구|읍|면|동|리|로|길|역))", query):
+        return None
+    hit = ADDRESS_POINTS.get(query)
+    if not isinstance(hit, (list, tuple)) or len(hit) != 2:
+        return None
+    try:
+        lat, lng = float(hit[0]), float(hit[1])
+    except (TypeError, ValueError):
+        return None
+    if not (33.0 <= lat <= 39.6 and 124.0 <= lng <= 132.2):
+        return None
+    region = region_from_address(shop.get("address") or "") or shop.get("region") or ""
+    center = REGION_POINT.get(region)
+    if center and km_between((lat, lng), center) > 120:
+        return None
+    return round(lat, 5), round(lng, 5)
+
+
 def nearby_point(shop):
+    point = geocoded_point(shop)
+    if point:
+        return point
     anchor = nearby_anchor(shop)
     if not anchor:
         return None
@@ -2184,7 +2220,7 @@ def nearby_rows(shops):
             "id": shop["id"],
             "name": shop["name"],
             "place": shop.get("place") or shop.get("region") or "",
-            "addr": short_line(shop.get("address") or shop.get("place") or "", 42),
+            "addr": short_line(map_address(shop) or shop.get("address") or shop.get("place") or "", 64),
             "hours": short_line(shop.get("hours") or "", 32),
             "kind": "outcall" if any(word in blob for word in ("출장", "홈타이", "홈케어")) else "shop",
             "badge": label,
@@ -2244,7 +2280,7 @@ def render_nearby():
   </div>
   <section id="nearby-list" class="nearby-list"></section>
 </main>
-<script src="/assets/nearby.js?v=13"></script>"""
+<script src="/assets/nearby.js?v=14"></script>"""
     html = page_shell(
         f"내주변 지도 | {BRAND}",
         f"현재 위치에서 가까운 마사지 업체를 지도에서 찾아보세요. {BRAND}",
@@ -2491,6 +2527,7 @@ def main():
     favicon = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#2f6f62"/><path fill="#f6efe4" d="M16 6c-3.6 4.4-6 7.2-6 10.6a6 6 0 0 0 12 0C22 13.2 19.6 10.4 16 6z"/></svg>"""
     write(os.path.join(OUT, "assets", "favicon.svg"), favicon)
     load_place_catalog()
+    load_address_points()
     shops = build_shops()
     REVIEW_SEEN.clear()
     shops, photo_count, photo_repeats = attach_images(shops)
