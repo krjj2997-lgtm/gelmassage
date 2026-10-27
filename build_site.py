@@ -920,13 +920,77 @@ def tel_href(phone):
     return f"tel:{digits}" if digits else ""
 
 
+def address_lines(raw):
+    text = re.sub(r"[\u200b\ufeff\xa0]", " ", raw or "")
+    text = text.replace("／", "/")
+    lines = []
+    for part in re.split(r"\s*/\s*|\n+", text):
+        part = re.sub(r"\s+", " ", part).strip(" ·")
+        if part:
+            lines.append(part)
+    return lines
+
+
+def address_html(raw):
+    return "<br>".join(escape(line) for line in address_lines(raw))
+
+
+def admin_prefix(line):
+    kept = []
+    for token in re.split(r"\s+", (line or "").replace("(", " ")):
+        token = token.strip(" ·,()[]")
+        if not token:
+            continue
+        if re.search(r"\d", token) or re.search(r"(동|읍|면|리|로|길|역)$", token):
+            break
+        if re.search(r"(특별시|광역시|특별자치시|특별자치도|시|도|군|구)$", token):
+            kept.append(token)
+            continue
+        break
+    return " ".join(kept)
+
+
+def road_phrase(line):
+    match = re.search(r"\(([^)]*(?:로|길)(?![가-힣])[^)]*)\)", line or "")
+    if match and re.search(r"\d", match.group(1)):
+        return re.sub(r"\s+", " ", match.group(1)).strip()
+    match = re.search(
+        r"([가-힣]{2,}(?:로\d*길|로|길)(?![가-힣])(?:\s*\d+\s*번길)?(?:\s*\d+(?:-\d+)?)?)",
+        line or "",
+    )
+    if not match:
+        return ""
+    phrase = re.sub(r"\s+", " ", match.group(1)).strip()
+    if not re.search(r"\d", phrase) and not re.search(r"(?:로|길)$", phrase):
+        return ""
+    return phrase
+
+
 def map_address(shop):
-    raw = (shop.get("address") or shop.get("place") or shop.get("name") or "").strip()
-    parts = [part.strip() for part in re.split(r"[/\n]", raw) if part.strip()]
-    for part in parts:
-        if re.search(r"(로|길)", part):
-            return part
-    return parts[0] if parts else (shop.get("name") or "")
+    lines = address_lines(shop.get("address") or "")
+    for line in lines:
+        road = road_phrase(line)
+        if not road:
+            continue
+        prefix = admin_prefix(line)
+        if prefix and prefix not in road:
+            return f"{prefix} {road}"
+        return road
+    for line in lines:
+        if re.search(r"도보|출구", line):
+            continue
+        if re.search(r"(동|읍|면|리|가)\s*\d", line):
+            cleaned = re.sub(r"\([^)]*\)", " ", line)
+            cleaned = re.sub(r"\s+", " ", cleaned).strip(" ·")
+            if cleaned:
+                return cleaned
+    for line in lines:
+        station = re.search(r"([가-힣0-9]{2,}역)", line)
+        if station:
+            return station.group(1)
+    if lines:
+        return lines[0]
+    return (shop.get("place") or shop.get("name") or "").strip()
 
 
 def detail_actions(shop):
@@ -1798,7 +1862,7 @@ def render_shop(shop):
     shown_price = won_price(shop["price"]) or shop["price"]
     facts = []
     if shop["address"]:
-        facts.append(f'<div class="fact"><span>주소</span><address>{escape(shop["address"])}</address></div>')
+        facts.append(f'<div class="fact"><span>주소</span><address>{address_html(shop["address"])}</address></div>')
     if shop["hours"]:
         facts.append(f'<div class="fact"><span>영업시간</span><p>{escape(shop["hours"])}</p></div>')
     if shop["phone"]:
@@ -1827,7 +1891,7 @@ def render_shop(shop):
         "description": shop["description"],
         "address": {
             "@type": "PostalAddress",
-            "streetAddress": shop["address"] or shop["place"],
+            "streetAddress": map_address(shop) or shop["place"],
             "addressRegion": shop["region"],
             "addressCountry": "KR",
         },
@@ -1912,11 +1976,52 @@ def shop_point(shop):
     anchor = shop_anchor(shop)
     if not anchor:
         return None
+    return jitter_point(anchor, shop["id"])
+
+
+REGION_POINT = {
+    "서울": (37.5665, 126.9780),
+    "경기": (37.4138, 127.5183),
+    "인천": (37.4563, 126.7052),
+    "부산": (35.1796, 129.0756),
+    "대구": (35.8714, 128.6014),
+    "대전": (36.3504, 127.3845),
+    "광주": (35.1595, 126.8526),
+    "울산": (35.5384, 129.3114),
+    "세종": (36.4800, 127.2890),
+    "강원": (37.8228, 128.1555),
+    "충북": (36.6357, 127.4914),
+    "충남": (36.5184, 126.8000),
+    "전북": (35.7175, 127.1530),
+    "전남": (34.8679, 126.9910),
+    "경북": (36.4919, 128.8889),
+    "경남": (35.4606, 128.2132),
+    "제주": (33.4996, 126.5312),
+}
+
+
+def jitter_point(anchor, shop_id):
     lat, lng = anchor
-    shift = sum(ord(ch) for ch in str(shop["id"]))
+    shift = sum(ord(ch) for ch in str(shop_id))
     lat += ((shift % 17) - 8) * 0.0011
     lng += (((shift // 17) % 17) - 8) * 0.0011
     return round(lat, 5), round(lng, 5)
+
+
+def nearby_point(shop):
+    point = shop_point(shop)
+    if point:
+        return point
+    blob = f"{shop.get('address') or ''} {shop.get('title') or ''} {shop.get('place') or ''}"
+    best = ""
+    for name in COORDS:
+        if len(name) < 2 or name not in blob or len(name) <= len(best):
+            continue
+        best = name
+    anchor = COORDS.get(best) or REGION_POINT.get(shop.get("region") or "")
+    if not anchor:
+        return None
+    return jitter_point(anchor, shop["id"])
 
 
 def km_between(a, b):
@@ -1986,11 +2091,17 @@ def near_section(shop):
 def nearby_rows(shops):
     rows = []
     for shop in shops:
-        point = shop_point(shop)
+        point = nearby_point(shop)
         if not point:
             continue
-        label, klass = badge(shop)
-        blob = " ".join([shop.get("service") or "", shop.get("name") or ""])
+        label = badge(shop)[0]
+        blob = " ".join([
+            shop.get("title") or "",
+            shop.get("place") or "",
+            shop.get("name") or "",
+            shop.get("service") or "",
+            shop.get("content") or "",
+        ])
         image = shop["images"][0]["src"] if shop.get("images") else ""
         rows.append({
             "id": shop["id"],
@@ -1998,10 +2109,10 @@ def nearby_rows(shops):
             "place": shop.get("place") or shop.get("region") or "",
             "addr": short_line(shop.get("address") or shop.get("place") or "", 42),
             "hours": short_line(shop.get("hours") or "", 32),
-            "kind": "outcall" if "outcall" in klass else "shop",
+            "kind": "outcall" if any(word in blob for word in ("출장", "홈타이", "홈케어")) else "shop",
             "badge": label,
-            "one": 1 if "1인" in blob else 0,
-            "home": 1 if ("홈케어" in blob or "홈타이" in blob) else 0,
+            "one": 1 if re.search(r"1\s*인", blob) else 0,
+            "home": 0,
             "q": short_line(blob, 80),
             "price": won_price(shop.get("price")) or shop.get("price") or "",
             "short": shop.get("price") or "",
@@ -2020,7 +2131,6 @@ def render_nearby():
     <button type="button" data-cat="shop">마사지</button>
     <button type="button" data-cat="outcall">출장마사지</button>
     <button type="button" data-cat="one">1인샵</button>
-    <button type="button" data-cat="home">홈케어</button>
   </nav>
   <div class="nearby-filters" id="nearby-radius">
     <button type="button" class="active" data-km="0">전체</button>
@@ -2057,7 +2167,7 @@ def render_nearby():
   </div>
   <section id="nearby-list" class="nearby-list"></section>
 </main>
-<script src="/assets/nearby.js?v=10"></script>"""
+<script src="/assets/nearby.js?v=11"></script>"""
     html = page_shell(
         f"내주변 지도 | {BRAND}",
         f"현재 위치에서 가까운 마사지 업체를 지도에서 찾아보세요. {BRAND}",

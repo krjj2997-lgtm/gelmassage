@@ -70,11 +70,10 @@
       if (cat === "shop" && shop.kind !== "shop") continue;
       if (cat === "outcall" && shop.kind !== "outcall") continue;
       if (cat === "one" && !shop.one) continue;
-      if (cat === "home" && !shop.home) continue;
       if (theme && String(shop.q || "").indexOf(theme) === -1) continue;
-      if (healing && cat !== "home" && shop.kind !== "shop") continue;
+      if (healing && shop.kind !== "shop") continue;
       shop.km = kmBetween(origin, shop);
-      if (cat !== "home" && radius && shop.km > radius) continue;
+      if (radius && shop.km > radius) continue;
       rows.push(shop);
     }
     rows.sort(function (a, b) { return a.km - b.km; });
@@ -133,7 +132,7 @@
     }
     listEl.innerHTML = "<h2>" + esc(title) + "</h2>" + rows.map(function (shop) {
       var selected = String(shop.id) === String(selectedId) ? " is-selected" : "";
-      var badge = shop.kind === "outcall" ? "출장샵" : "힐링샵";
+      var badge = shop.kind === "outcall" ? "출장마사지" : "힐링샵";
       var badgeClass = shop.kind === "outcall" ? "shop-type shop-type-outcall" : "shop-type";
       var img = shop.img ? '<img src="' + esc(shop.img) + '" alt="' + esc(shop.name) + '" width="92" height="118" loading="lazy">' : "";
       return '<a class="shop-card' + selected + '" id="card-' + esc(shop.id) + '" href="/shop/' + encodeURIComponent(shop.id) + '/">' +
@@ -163,22 +162,52 @@
     });
   }
 
-  function moveToOrigin() {
+  function frameMap(rows) {
+    var dLat = radius ? radius / 111 : 0;
+    var dLng = radius ? radius / (111 * Math.cos((origin.lat * Math.PI) / 180)) : 0;
     if (usingKakao && kakaoMap) {
       if (typeof kakaoMap.relayout === "function") kakaoMap.relayout();
-      kakaoMap.setLevel(5);
-      kakaoMap.setCenter(new kakao.maps.LatLng(origin.lat, origin.lng));
-    } else if (leafletMap) {
-      leafletMap.invalidateSize();
-      leafletMap.setView([origin.lat, origin.lng], 14, { animate: true });
+      if (radius) {
+        var box = new kakao.maps.LatLngBounds(
+          new kakao.maps.LatLng(origin.lat - dLat, origin.lng - dLng),
+          new kakao.maps.LatLng(origin.lat + dLat, origin.lng + dLng)
+        );
+        kakaoMap.setBounds(box);
+        return;
+      }
+      if (!rows.length) {
+        kakaoMap.setLevel(8);
+        kakaoMap.setCenter(new kakao.maps.LatLng(origin.lat, origin.lng));
+        return;
+      }
+      var bounds = new kakao.maps.LatLngBounds();
+      bounds.extend(new kakao.maps.LatLng(origin.lat, origin.lng));
+      for (var i = 0; i < rows.length; i++) bounds.extend(new kakao.maps.LatLng(rows[i].lat, rows[i].lng));
+      kakaoMap.setBounds(bounds);
+      return;
     }
+    if (!leafletMap) return;
+    leafletMap.invalidateSize();
+    if (radius) {
+      leafletMap.fitBounds([
+        [origin.lat - dLat, origin.lng - dLng],
+        [origin.lat + dLat, origin.lng + dLng]
+      ], { padding: [20, 20] });
+      return;
+    }
+    if (!rows.length) {
+      leafletMap.setView([origin.lat, origin.lng], 12);
+      return;
+    }
+    var pts = [[origin.lat, origin.lng]];
+    for (var n = 0; n < rows.length; n++) pts.push([rows[n].lat, rows[n].lng]);
+    leafletMap.fitBounds(pts, { padding: [24, 24] });
   }
 
   function drawPins(rows, fit) {
     closePicker();
     clearPins();
-    if (cat === "home") return;
-    var shown = rows.slice(0, 160);
+    var shown = rows;
     var groups = groupOverlapping(shown);
     var mePos = null;
     if (usingKakao) {
@@ -255,18 +284,11 @@
       })(groups[i]);
     }
     if (fit === false) return;
-    moveToOrigin();
+    frameMap(rows);
   }
 
   function render() {
-    if (wrap) wrap.classList.toggle("is-homecare", cat === "home");
-    var kmButtons = document.querySelectorAll("#nearby-radius button[data-km]");
-    for (var i = 0; i < kmButtons.length; i++) {
-      var button = kmButtons[i];
-      var value = button.getAttribute("data-km");
-      button.disabled = cat === "home" && value !== "0";
-      if (cat === "home") button.classList.toggle("active", value === "0");
-    }
+    if (wrap) wrap.classList.remove("is-homecare");
     var rows = rowsInRange();
     paintList(rows);
     drawPins(rows);
@@ -311,14 +333,13 @@
     if (!button) return;
     cat = button.getAttribute("data-cat") || "";
     mark(catBar, "data-cat", cat);
-    if (cat === "home") radius = 0;
     render();
   });
 
   var radiusBar = document.getElementById("nearby-radius");
   if (radiusBar) radiusBar.addEventListener("click", function (event) {
     var button = event.target.closest("button[data-km]");
-    if (!button || button.disabled || cat === "home") return;
+    if (!button || button.disabled) return;
     radius = Number(button.getAttribute("data-km"));
     mark(radiusBar, "data-km", button.getAttribute("data-km"));
     render();
@@ -365,7 +386,6 @@
       located = true;
       origin = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       render();
-      moveToOrigin();
     }, function () {
       located = false;
       statusEl.firstChild.textContent = "위치를 허용하지 않아 서울역 기준으로 보여 줍니다.";
