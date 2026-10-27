@@ -450,7 +450,7 @@
     });
   }
 
-  fetch("/assets/nearby.json")
+  fetch("/assets/nearby.json?v=2")
     .then(function (response) { return response.json(); })
     .then(function (data) {
       shops = data || [];

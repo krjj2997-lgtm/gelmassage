@@ -1999,6 +1999,43 @@ REGION_POINT = {
     "제주": (33.4996, 126.5312),
 }
 
+# 중구·서구처럼 여러 도시에 있는 이름은 지역과 함께만 쓴다.
+SCOPED_COORDS = {
+    ("서울", "중구"): (37.564, 126.997),
+    ("서울", "강서"): (37.551, 126.850),
+    ("부산", "중구"): (35.106, 129.032),
+    ("부산", "서구"): (35.098, 129.024),
+    ("부산", "동구"): (35.129, 129.045),
+    ("부산", "남구"): (35.136, 129.084),
+    ("부산", "북구"): (35.197, 128.990),
+    ("부산", "강서"): (35.212, 128.981),
+    ("대구", "중구"): (35.869, 128.606),
+    ("대구", "동구"): (35.887, 128.635),
+    ("대구", "서구"): (35.872, 128.559),
+    ("대구", "남구"): (35.846, 128.597),
+    ("대구", "북구"): (35.886, 128.583),
+    ("인천", "중구"): (37.473, 126.621),
+    ("인천", "동구"): (37.474, 126.643),
+    ("인천", "미추홀"): (37.463, 126.650),
+    ("인천", "서구"): (37.545, 126.676),
+    ("광주", "동구"): (35.146, 126.923),
+    ("광주", "서구"): (35.152, 126.890),
+    ("광주", "남구"): (35.133, 126.902),
+    ("광주", "북구"): (35.174, 126.912),
+    ("대전", "동구"): (36.312, 127.455),
+    ("대전", "중구"): (36.325, 127.421),
+    ("대전", "서구"): (36.355, 127.383),
+    ("울산", "중구"): (35.569, 129.332),
+    ("울산", "남구"): (35.544, 129.330),
+    ("울산", "동구"): (35.505, 129.416),
+    ("울산", "북구"): (35.583, 129.361),
+    ("경북", "남구"): (36.008, 129.360),
+    ("경북", "북구"): (36.042, 129.366),
+    ("강원", "고성"): (38.380, 128.468),
+    ("경남", "고성"): (34.973, 128.323),
+}
+AMBIGUOUS_PLACES = {"중구", "서구", "남구", "동구", "북구", "강서", "고성"}
+
 
 def jitter_point(anchor, shop_id):
     lat, lng = anchor
@@ -2008,20 +2045,60 @@ def jitter_point(anchor, shop_id):
     return round(lat, 5), round(lng, 5)
 
 
-def nearby_point(shop):
-    point = shop_point(shop)
+def coord_in_region(region, name):
+    if not name:
+        return None
+    scoped = SCOPED_COORDS.get((region, name))
+    if scoped:
+        return scoped
+    if name in AMBIGUOUS_PLACES:
+        return None
+    point = COORDS.get(name)
+    if not point:
+        return None
+    center = REGION_POINT.get(region)
+    if center and km_between(point, center) > 120:
+        return None
+    return point
+
+
+def nearby_anchor(shop):
+    address = shop.get("address") or ""
+    region = region_from_address(address) or shop.get("region") or ""
+    tokens = admin_tokens(address)
+    for kind in ("dong", "gu", "si", "gun", "station"):
+        for name, token_kind in tokens:
+            if token_kind != kind:
+                continue
+            if kind in ("station", "dong"):
+                for (reg, _sub, spot), point in AREA_POINTS.items():
+                    if reg == region and spot == name:
+                        return point
+                short = re.sub(r"(동|읍|면|리|역|\d+가)$", "", name)
+                point = coord_in_region(region, name) or coord_in_region(region, short)
+            else:
+                point = coord_in_region(region, name)
+            if point:
+                return point
+    point = coord_in_region(region, shop.get("sub") or "")
     if point:
         return point
-    blob = f"{shop.get('address') or ''} {shop.get('title') or ''} {shop.get('place') or ''}"
-    best = ""
-    for name in COORDS:
-        if len(name) < 2 or name not in blob or len(name) <= len(best):
-            continue
-        best = name
-    anchor = COORDS.get(best) or REGION_POINT.get(shop.get("region") or "")
+    for spot in shop.get("spots") or ():
+        hit = AREA_POINTS.get((region, shop.get("sub") or "", spot))
+        if hit:
+            return hit
+    return REGION_POINT.get(region)
+
+
+def nearby_point(shop):
+    anchor = nearby_anchor(shop)
     if not anchor:
         return None
-    return jitter_point(anchor, shop["id"])
+    lat, lng = anchor
+    shift = sum(ord(ch) for ch in str(shop.get("id") or ""))
+    lat += ((shift % 17) - 8) * 0.00025
+    lng += (((shift // 17) % 17) - 8) * 0.00025
+    return round(lat, 5), round(lng, 5)
 
 
 def km_between(a, b):
@@ -2167,7 +2244,7 @@ def render_nearby():
   </div>
   <section id="nearby-list" class="nearby-list"></section>
 </main>
-<script src="/assets/nearby.js?v=12"></script>"""
+<script src="/assets/nearby.js?v=13"></script>"""
     html = page_shell(
         f"내주변 지도 | {BRAND}",
         f"현재 위치에서 가까운 마사지 업체를 지도에서 찾아보세요. {BRAND}",
