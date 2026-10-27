@@ -285,7 +285,7 @@ def region_from_title_places(title):
 
 def title_place_parts(title):
     head = (title or "").split("〔")[0].split("[")[0].split("｛")[0]
-    head = re.sub(r"(1인홈케어|2인홈케어|3인홈케어|1인샵|2인샵|3인샵|홈케어|홈타이|1인홈|&홈)", " ", head)
+    head = re.sub(r"(1인출장마사지|2인출장마사지|3인출장마사지|1인홈케어|2인홈케어|3인홈케어|1인샵|2인샵|3인샵|출장마사지|홈케어|홈타이|1인홈|&홈)", " ", head)
     head = re.sub(r"[\.·]", " ", head)
     parts = []
     for part in head.split():
@@ -374,7 +374,7 @@ def choose_spots(sub, tokens, title_parts):
             continue
         label = part.replace("&", "")
         label = re.sub(r"(1인|2인|3인|샵|홈)$", "", label).strip()
-        if label in ("홈", "샵", "1인", "2인", "3인", "케어", "홈케어", "전지역", "관리", "방문"):
+        if label in ("홈", "샵", "1인", "2인", "3인", "케어", "홈케어", "출장마사지", "전지역", "관리", "방문"):
             continue
         if label in CITY or label in METRO_GU:
             continue
@@ -1168,7 +1168,7 @@ def finder_bar(page, active=""):
 <dialog class="info-dialog" id="info-dialog">
   <h2>관련정보</h2>
   <p>지역을 고르면 그 지역의 업체가 나오고, 세부지역을 고르면 가까운 동네부터 정렬됩니다.</p>
-  <p>마사지는 매장 업체, 출장마사지는 출장·홈타이·홈케어 업체만 보여 줍니다. 테마보기는 스웨디시, 타이, 아로마처럼 종목으로 다시 거릅니다.</p>
+  <p>마사지는 매장 업체, 출장마사지는 출장·홈타이 업체만 보여 줍니다. 테마보기는 스웨디시, 타이, 아로마처럼 종목으로 다시 거릅니다.</p>
   <p>예약은 업체 상세의 전화번호로 확인해 주세요.</p>
   <p><a href="/all/">전체 업체 보기</a></p>
   <form method="dialog"><button type="submit">닫기</button></form>
@@ -1432,7 +1432,7 @@ def build_shops():
     return shops
 
 
-NAME_TAILS = ("아로마테라피", "스웨디시", "로미로미", "홈타이", "홈케어", "테라피", "마사지", "왁싱", "스파")
+NAME_TAILS = ("아로마테라피", "스웨디시", "로미로미", "홈타이", "홈케어", "출장마사지", "테라피", "마사지", "왁싱", "스파")
 
 
 def same_shop_name(brand, shop_name):
