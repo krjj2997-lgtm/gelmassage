@@ -1309,7 +1309,7 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
   </div>
 </footer>
 {listing_seo_script() if page in ("region", "all") else ""}
-<script src="/assets/site.js?v=20" defer></script>
+<script src="/assets/site.js?v=21" defer></script>
 </body>
 </html>
 """
@@ -1688,7 +1688,7 @@ def render_listing(shops, title, description, canonical, h1, intro, active="", p
         spot=spot,
         place=place,
         list_src=list_src,
-        robots=("index,follow" if shops else "noindex,follow") if (sub or spot) else "index,follow",
+        robots="index,follow",
         origin=origin,
     )
 
@@ -2261,7 +2261,6 @@ def filter_query(sub="", spot="", kind="", theme=""):
 
 def filter_page_urls(shops):
     live = {shop["region"] for shop in shops}
-    sub_has = {(shop.get("region"), shop.get("sub")) for shop in shops if shop.get("sub")}
     found = []
     for name, slug in REGIONS:
         if name not in live:
@@ -2270,7 +2269,7 @@ def filter_page_urls(shops):
         for kind, theme in SITEMAP_FILTERS:
             found.append(base + filter_query(kind=kind, theme=theme))
         for sub, spots in (LOCATION_TREE.get(name) or {}).items():
-            if not path_segment(sub) or (name, sub) not in sub_has:
+            if not path_segment(sub):
                 continue
             sub_base = f"{base}{quote(sub, safe='')}/"
             found.append(sub_base)

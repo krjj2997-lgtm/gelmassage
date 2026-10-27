@@ -188,7 +188,7 @@
     setMeta('meta[name="twitter:title"]', "content", title);
     setMeta('meta[name="twitter:description"]', "content", description);
     var robots = document.querySelector('meta[name="robots"]');
-    if (robots) robots.setAttribute("content", filtered && count === 0 ? "noindex,follow" : "index,follow");
+    if (robots) robots.setAttribute("content", (currentKind || currentTheme) && count === 0 ? "noindex,follow" : "index,follow");
     var crumb = document.getElementById("crumb-current");
     if (crumb && heading) crumb.textContent = heading;
     var ld = document.getElementById("listing-ld");
