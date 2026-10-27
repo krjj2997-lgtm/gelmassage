@@ -194,13 +194,14 @@
     var ld = document.getElementById("listing-ld");
     var nav = document.querySelector(".crumb");
     if (ld && nav) {
-      var names = [];
-      nav.querySelectorAll("a, span").forEach(function (node) { names.push(node.textContent); });
-      var items = names.map(function (name, index) {
-        return { "@type": "ListItem", position: index + 1, name: name };
+      var items = [];
+      nav.querySelectorAll("a, span").forEach(function (node, index) {
+        var entry = { "@type": "ListItem", position: index + 1, name: node.textContent };
+        var href = node.getAttribute("href");
+        if (href) entry.item = new URL(href, "https://outcallmassage.co.kr/").href;
+        else if (canon) entry.item = canon;
+        items.push(entry);
       });
-      if (items[0]) items[0].item = "https://outcallmassage.co.kr/";
-      if (canon && items.length > 1) items[items.length - 1].item = canon;
       ld.textContent = JSON.stringify({ "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: items });
     }
     if (note) {
