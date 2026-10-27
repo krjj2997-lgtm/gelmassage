@@ -1403,6 +1403,10 @@ def build_shops():
         slogan = re.sub(r"\s+", " ", (fields.get("title") or "").strip())
         if len(slogan) > 80:
             slogan = slogan[:79].rstrip() + "…"
+        preset = [
+            name for name in (item.get("images") or [])
+            if isinstance(name, str) and name and not name.startswith("http")
+        ]
         shops.append({
             "id": str(item["id"]),
             "name": name,
@@ -1421,7 +1425,7 @@ def build_shops():
             "description": blurb(content, f"{place_label(title, region)} {name} 마사지 업체 정보입니다."),
             "content": content,
             "nations": nations,
-            "images": [],
+            "images": preset,
             "filename_text": "",
             "kind": "shop",
         })
@@ -1489,6 +1493,8 @@ def attach_images(shops):
     used = {name: 0 for name in files}
     total = len(files)
     for shop in shops:
+        if shop.get("images"):
+            continue
         chosen = ""
         for _ in range(total):
             filename = files[cursor % total]
@@ -2318,7 +2324,9 @@ def main():
         for image in shop["images"]:
             if image["file"] in copied:
                 continue
-            shutil.copy2(os.path.join(IMG_SRC, image["file"]), os.path.join(OUT, "images", image["file"]))
+            dest = os.path.join(OUT, "images", image["file"])
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            shutil.copy2(os.path.join(IMG_SRC, image["file"]), dest)
             copied.add(image["file"])
     write(os.path.join(OUT, "assets", "nearby.json"), json.dumps(nearby_rows(shops), ensure_ascii=False, separators=(",", ":")))
     render_home(shops)
