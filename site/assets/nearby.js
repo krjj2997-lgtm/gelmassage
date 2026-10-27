@@ -167,12 +167,11 @@
       var badge = shop.kind === "outcall" ? "출장마사지" : "힐링샵";
       var badgeClass = shop.kind === "outcall" ? "shop-type shop-type-outcall" : "shop-type";
       var img = shop.img ? '<img src="' + esc(shop.img) + '" alt="' + esc(shop.name) + '" width="92" height="118" loading="lazy">' : "";
-      var copy = selected && shop.q ? '<p>' + esc(shop.q) + "</p>" : "";
       return '<a class="shop-card' + selected + '" id="card-' + esc(shop.id) + '" href="/shop/' + encodeURIComponent(shop.id) + '/">' +
         '<div class="card-image">' + img + '<div class="image-overlay"><div class="' + badgeClass + '">' + badge + "</div></div></div>" +
         '<div class="card-body"><div class="row1"><h3><span class="card-name">' + esc(shop.name) + '</span></h3><span class="km">' +
         fmtKm(shop.km) + "</span></div><p>" + esc(shop.addr || shop.place || "주소 없음") + "</p><p>" +
-        esc(shop.hours || "영업시간 정보 없음") + "</p>" + copy + '<p class="price"><span class="price-label">최저가</span>' +
+        esc(shop.hours || "영업시간 정보 없음") + '</p><p class="price"><span class="price-label">최저가</span>' +
         esc(shop.price || "가격 문의") + "</p></div></a>";
     }).join("");
   }

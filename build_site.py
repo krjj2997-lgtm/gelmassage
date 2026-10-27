@@ -1347,7 +1347,7 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
 <meta name="twitter:title" content="{escape(title)}">
 <meta name="twitter:description" content="{desc}">
 <link rel="icon" href="/assets/favicon.svg">
-<link rel="stylesheet" href="/assets/style.css?v=20">
+<link rel="stylesheet" href="/assets/style.css?v=21">
 {extra_head}
 {ld}
 </head>
@@ -2307,7 +2307,7 @@ def render_nearby():
   </div>
   <section id="nearby-list" class="nearby-list"></section>
 </main>
-<script src="/assets/nearby.js?v=14"></script>"""
+<script src="/assets/nearby.js?v=15"></script>"""
     html = page_shell(
         f"내주변 지도 | {BRAND}",
         f"현재 위치에서 가까운 마사지 업체를 지도에서 찾아보세요. {BRAND}",
