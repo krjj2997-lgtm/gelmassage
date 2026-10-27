@@ -1309,7 +1309,7 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
   </div>
 </footer>
 {listing_seo_script() if page in ("region", "all") else ""}
-<script src="/assets/site.js?v=19" defer></script>
+<script src="/assets/site.js?v=20" defer></script>
 </body>
 </html>
 """
@@ -1610,14 +1610,20 @@ def render_home(shops):
     write(os.path.join(OUT, "index.html"), html)
 
 
-def listing_json_ld(h1, canonical):
+def listing_json_ld(trail, canonical):
+    elements = []
+    for index, (label, href) in enumerate(trail, start=1):
+        if not href:
+            url = canonical
+        elif href.startswith("http"):
+            url = href
+        else:
+            url = ORIGIN + href
+        elements.append({"@type": "ListItem", "position": index, "name": label, "item": url})
     payload = {
         "@context": "https://schema.org",
         "@type": "BreadcrumbList",
-        "itemListElement": [
-            {"@type": "ListItem", "position": 1, "name": "홈", "item": ORIGIN + "/"},
-            {"@type": "ListItem", "position": 2, "name": h1, "item": canonical},
-        ],
+        "itemListElement": elements,
     }
     raw = json.dumps(payload, ensure_ascii=False).replace("<", "\\u003c")
     return f'<script type="application/ld+json" id="listing-ld">{raw}</script>'
@@ -1672,7 +1678,7 @@ def render_listing(shops, title, description, canonical, h1, intro, active="", p
   <p id="result-note" class="result-note">{escape(intro)}</p>
   <p id="empty" class="empty"{empty_hidden}>조건에 맞는 업체가 없습니다. 다른 지역이나 이름으로 다시 찾아보세요.</p>
   <div class="massage-list">{cards}</div>
-  {listing_json_ld(h1, canonical)}
+  {listing_json_ld(trail, canonical)}
 </main>"""
     return page_shell(
         title, description, canonical, body,
