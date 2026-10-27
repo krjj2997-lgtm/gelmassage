@@ -1231,7 +1231,7 @@ def finder_bar(page, active=""):
 </section>
 <dialog class="info-dialog" id="info-dialog">
   <h2>관련정보</h2>
-  <p>지역을 고르면 그 지역의 업체가 나오고, 세부지역을 고르면 가까운 동네부터 정렬됩니다.</p>
+  <p>지역을 고르면 그 지역의 업체가 나오고, 세부지역이나 동/역을 고르면 그 지점 기준 5km 안 업체가 나옵니다.</p>
   <p>마사지는 매장 업체, 출장마사지는 출장·홈타이 업체만 보여 줍니다. 테마보기는 스웨디시, 타이, 아로마처럼 종목으로 다시 거릅니다.</p>
   <p>예약은 업체 상세의 전화번호로 확인해 주세요.</p>
   <p><a href="/all/">전체 업체 보기</a></p>
@@ -1373,7 +1373,7 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
   </div>
 </footer>
 {listing_seo_script() if page in ("region", "all") else ""}
-<script src="/assets/site.js?v=21" defer></script>
+<script src="/assets/site.js?v=22" defer></script>
 </body>
 </html>
 """
@@ -1417,7 +1417,7 @@ def render_card(shop, eager=False):
     )
     spots = "|".join(shop.get("spots") or [])
     kind = "outcall" if "outcall" in klass else "shop"
-    located = shop_anchor(shop)
+    located = listing_point(shop)
     latlng = f' data-lat="{located[0]}" data-lng="{located[1]}"' if located else ""
     return f"""<a class="massage-card" href="/shop/{shop["id"]}/" data-q="{escape(query)}" data-region="{escape(shop.get("region") or "")}" data-sub="{escape(shop.get("sub") or "")}" data-spots="{escape(spots)}" data-kind="{kind}"{latlng}>
   <div class="card-image">{media}<div class="image-overlay"><div class="{klass}">{label}</div></div></div>
@@ -1789,9 +1789,8 @@ def render_regions(shops):
                 continue
             place = sub_place(name, sub)
             heading = f"{place}마사지 {TITLE_TAIL}"
-            sub_rows = [shop for shop in rows if shop.get("sub") == sub]
-            sub_rows.sort(key=lambda shop: (0 if shop["images"] else 1, shop["name"]))
-            sub_intro = f"{heading} {len(sub_rows)}곳입니다." if sub_rows else f"{heading}에 해당하는 업체가 없습니다."
+            sub_rows, sub_origin = shops_near(shops, name, sub)
+            sub_intro = f"{place} 기준 5km 안 업체 {len(sub_rows)}곳입니다." if sub_rows else f"{heading}에 해당하는 업체가 없습니다."
             sub_canon = f"{ORIGIN}/region/{slug}/{quote(sub, safe='')}/"
             sub_html = render_listing(
                 sub_rows,
@@ -1803,6 +1802,7 @@ def render_regions(shops):
                 active=name,
                 sub=sub,
                 place=place,
+                origin=sub_origin,
             )
             write(os.path.join(OUT, "region", slug, sub, "index.html"), sub_html)
             parent = (heading, f"/region/{slug}/{quote(sub, safe='')}/")
@@ -1811,11 +1811,9 @@ def render_regions(shops):
                     continue
                 spot_name = spot_place(name, sub, spot)
                 spot_heading = f"{spot_name}마사지 {TITLE_TAIL}"
-                origin = place_point(name, sub, spot)
-                spot_rows = list(sub_rows)
-                spot_rows.sort(key=lambda shop: (shop_distance(origin, shop), shop["name"]))
+                spot_rows, origin = shops_near(shops, name, sub, spot)
                 spot_intro = (
-                    f"{spot}에서 가까운 {sub} 업체 {len(spot_rows)}곳입니다."
+                    f"{spot_name} 기준 5km 안 업체 {len(spot_rows)}곳입니다."
                     if spot_rows else f"{spot_heading}에 해당하는 업체가 없습니다."
                 )
                 spot_html = render_listing(
@@ -1937,14 +1935,14 @@ def render_shop(shop):
 
 
 def place_point(region, sub, spot):
-    hit = AREA_POINTS.get((region, sub, spot))
-    if hit:
-        return hit
-    if spot in COORDS:
-        return COORDS[spot]
-    if sub in COORDS:
-        return COORDS[sub]
-    return None
+    if spot:
+        hit = AREA_POINTS.get((region, sub, spot))
+        if hit:
+            return hit
+        scoped = coord_in_region(region, spot)
+        if scoped:
+            return scoped
+    return coord_in_region(region, sub)
 
 
 def shop_anchor(shop):
@@ -2121,6 +2119,35 @@ def geocoded_point(shop):
     if center and km_between((lat, lng), center) > 120:
         return None
     return round(lat, 5), round(lng, 5)
+
+
+def listing_point(shop):
+    return nearby_point(shop) or shop_anchor(shop)
+
+
+def shops_near(shops, region, sub, spot=""):
+    origin = place_point(region, sub, spot)
+    if not origin:
+        rows = [shop for shop in shops if shop.get("region") == region and shop.get("sub") == sub]
+        if spot:
+            tagged = [shop for shop in rows if spot in (shop.get("spots") or ())]
+            if tagged:
+                rows = tagged
+        rows.sort(key=lambda shop: (0 if shop["images"] else 1, shop["name"]))
+        return rows, None
+    found = []
+    for shop in shops:
+        point = listing_point(shop)
+        if point and km_between(origin, point) <= 5:
+            found.append(shop)
+            continue
+        if point or shop.get("region") != region or shop.get("sub") != sub:
+            continue
+        if spot and spot not in (shop.get("spots") or ()):
+            continue
+        found.append(shop)
+    found.sort(key=lambda shop: ((km_between(origin, listing_point(shop)) if listing_point(shop) else 9999), shop["name"]))
+    return found, origin
 
 
 def nearby_point(shop):

@@ -109,15 +109,6 @@
     return null;
   }
 
-  function tierOf(card, sub, spot) {
-    var subName = card.getAttribute("data-sub") || "";
-    var spots = (card.getAttribute("data-spots") || "").split("|");
-    if (!sub) return 0;
-    if (subName === sub && spot && spots.indexOf(spot) !== -1) return 0;
-    if (subName === sub) return spot ? 1 : 0;
-    return 2;
-  }
-
   function rank(card, sub, spot, origin) {
     var here = shopPoint(card);
     if (!sub) {
@@ -126,7 +117,7 @@
     }
     var distance = origin && here ? kmBetween(origin, here) : 9999;
     card._km = distance;
-    return tierOf(card, sub, spot) * 10000 + distance;
+    return distance;
   }
 
   function nameOf(card) {
@@ -207,7 +198,7 @@
     if (note) {
       if (!filtered) note.textContent = noteBase;
       else if (count === 0) note.textContent = heading + "에 해당하는 업체가 없습니다.";
-      else if (spot) note.textContent = spot + "에서 가까운 " + (document.body.getAttribute("data-sub") || "") + " 업체 " + count + "곳입니다.";
+      else if (sub || spot) note.textContent = (document.body.getAttribute("data-place") || spot || sub) + " 기준 5km 안 업체 " + count + "곳입니다.";
       else note.textContent = heading + " " + count + "곳입니다.";
     }
   }
@@ -223,18 +214,24 @@
     var sub = subSel ? subSel.value : "";
     var spot = spotSel ? spotSel.value : "";
     var query = fold(input ? input.value : "");
+    var origin = originPoint(sub, spot);
     var shown = [];
     for (var i = 0; i < cards.length; i++) {
       var card = cards[i];
       var ok = true;
-      if (region && card.getAttribute("data-region") !== region) ok = false;
+      if (region && !sub && card.getAttribute("data-region") !== region) ok = false;
+      if (ok && sub) {
+        var here = shopPoint(card);
+        var distance = origin && here ? kmBetween(origin, here) : null;
+        if (distance !== null) ok = distance <= 5;
+        else ok = (card.getAttribute("data-sub") || "") === sub;
+      }
       if (ok && currentKind && card.getAttribute("data-kind") !== currentKind) ok = false;
       if (ok && currentTheme && fold(card.getAttribute("data-q")).indexOf(fold(currentTheme)) === -1) ok = false;
       if (ok && query && fold(card.getAttribute("data-q")).indexOf(query) === -1) ok = false;
       card.hidden = !ok;
       if (ok) shown.push(card);
     }
-    var origin = originPoint(sub, spot);
     shown.sort(function (a, b) {
       var diff = rank(a, sub, spot, origin) - rank(b, sub, spot, origin);
       if (diff) return diff;
