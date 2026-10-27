@@ -153,16 +153,26 @@
       listEl.innerHTML = "<h2>" + title + '</h2><p class="empty">' + empty + "</p>";
       return;
     }
-    listEl.innerHTML = "<h2>" + esc(title) + "</h2>" + rows.map(function (shop) {
+    var shown = rows.slice();
+    if (selectedId) {
+      shown.sort(function (a, b) {
+        var pickedA = String(a.id) === String(selectedId) ? 0 : 1;
+        var pickedB = String(b.id) === String(selectedId) ? 0 : 1;
+        if (pickedA !== pickedB) return pickedA - pickedB;
+        return a.km - b.km;
+      });
+    }
+    listEl.innerHTML = "<h2>" + esc(title) + "</h2>" + shown.map(function (shop) {
       var selected = String(shop.id) === String(selectedId) ? " is-selected" : "";
       var badge = shop.kind === "outcall" ? "출장마사지" : "힐링샵";
       var badgeClass = shop.kind === "outcall" ? "shop-type shop-type-outcall" : "shop-type";
       var img = shop.img ? '<img src="' + esc(shop.img) + '" alt="' + esc(shop.name) + '" width="92" height="118" loading="lazy">' : "";
+      var copy = selected && shop.q ? '<p>' + esc(shop.q) + "</p>" : "";
       return '<a class="shop-card' + selected + '" id="card-' + esc(shop.id) + '" href="/shop/' + encodeURIComponent(shop.id) + '/">' +
         '<div class="card-image">' + img + '<div class="image-overlay"><div class="' + badgeClass + '">' + badge + "</div></div></div>" +
         '<div class="card-body"><div class="row1"><h3><span class="card-name">' + esc(shop.name) + '</span></h3><span class="km">' +
         fmtKm(shop.km) + "</span></div><p>" + esc(shop.addr || shop.place || "주소 없음") + "</p><p>" +
-        esc(shop.hours || "영업시간 정보 없음") + '</p><p class="price"><span class="price-label">최저가</span>' +
+        esc(shop.hours || "영업시간 정보 없음") + "</p>" + copy + '<p class="price"><span class="price-label">최저가</span>' +
         esc(shop.price || "가격 문의") + "</p></div></a>";
     }).join("");
   }
@@ -310,27 +320,26 @@
   function selectShop(id) {
     selectedId = String(id);
     closePicker();
-    var cards = listEl.querySelectorAll(".shop-card");
-    for (var i = 0; i < cards.length; i++) {
-      cards[i].classList.toggle("is-selected", cards[i].id === "card-" + selectedId);
-    }
-    var labels = mapEl.querySelectorAll(".map-label, .map-cluster");
-    for (var n = 0; n < labels.length; n++) labels[n].classList.remove("is-selected");
+    suppressMapEvent = true;
     var shop = null;
     for (var s = 0; s < shops.length; s++) {
       if (String(shops[s].id) === selectedId) shop = shops[s];
     }
-    var card = document.getElementById("card-" + selectedId);
-    if (card) card.scrollIntoView({ behavior: "smooth", block: "nearest" });
     var rows = rowsInRange();
+    if (shop && !rows.some(function (row) { return String(row.id) === selectedId; })) {
+      shop.km = kmBetween(origin, shop);
+      rows.unshift(shop);
+    }
     paintList(rows);
     drawPins(rows, false);
+    if (listEl) listEl.scrollTop = 0;
     if (shop && usingKakao && kakaoMap) {
       kakaoMap.setLevel(4);
       kakaoMap.panTo(new kakao.maps.LatLng(shop.lat, shop.lng));
     } else if (shop && leafletMap) {
       leafletMap.setView([shop.lat, shop.lng], 16);
     }
+    setTimeout(function () { suppressMapEvent = false; }, 800);
   }
 
   function mark(bar, attr, value) {
@@ -450,7 +459,7 @@
     });
   }
 
-  fetch("/assets/nearby.json?v=2")
+  fetch("/assets/nearby.json?v=3")
     .then(function (response) { return response.json(); })
     .then(function (data) {
       shops = data || [];
