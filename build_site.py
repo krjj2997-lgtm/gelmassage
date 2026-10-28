@@ -904,7 +904,11 @@ def format_content(content, after_notice="", flags="", map_html=""):
             else:
                 html.append(f"<p>{escape(text)}</p>")
         dump_rates()
-        extra = " story-price" if title == "프로그램" else ""
+        extra = ""
+        if title == "프로그램":
+            extra = " story-price"
+        elif title == "관리사님":
+            extra = " story-staff"
         section = f'<section class="story{extra}">{heading}<div class="story-body">{"".join(html)}</div></section>'
         buckets[place(title)].append(section)
         if title == "공지안내" and pending[0]:
@@ -1038,19 +1042,31 @@ def map_address(shop):
     return (shop.get("place") or shop.get("name") or "").strip()
 
 
+CUPID = (
+    '<svg class="cupid" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 32" width="22" height="20" aria-hidden="true">'
+    '<g class="cupid-arrow">'
+    '<path d="M1 25.5 L27 11" fill="none" stroke="#ffe14a" stroke-width="2.2" stroke-linecap="round"/>'
+    '<path fill="#ffe14a" d="M24.2 7.4 L33 10.6 L25.4 14.4z"/>'
+    '<path fill="#ffe14a" d="M1 23.2 L6.2 27.6 L3.4 23.8z"/>'
+    "</g>"
+    '<path class="cupid-heart" fill="#fff" d="M18 28S6 20.2 6 13.2C6 9 9.2 6 13.2 6c2.2 0 3.8 1.1 4.8 2.6C19 7.1 20.6 6 22.8 6 26.8 6 30 9 30 13.2 30 20.2 18 28 18 28z"/>'
+    "</svg>"
+)
+
+
 def detail_actions(shop):
     phone = tel_href(shop.get("phone"))
     if phone:
-        call = f'<a class="detail-action" href="{phone}">전화하기</a>'
+        call = f'<a class="detail-action" href="{phone}">{CUPID}<span>전화하기</span></a>'
     else:
-        call = '<button type="button" class="detail-action" disabled>전화하기</button>'
+        call = f'<button type="button" class="detail-action" disabled>{CUPID}<span>전화하기</span></button>'
     query = quote(map_address(shop))
     naver = f"https://map.naver.com/p/search/{query}"
     kakao = f"https://map.kakao.com/link/search/{query}"
     tmap = f"tmap://search?name={query}"
     return f"""<nav class="detail-actions" aria-label="업체 바로가기">
   {call}
-  <button type="button" class="detail-action" id="open-route">길찾기</button>
+  <button type="button" class="detail-action" id="open-route">{CUPID}<span>길찾기</span></button>
   <a class="icon-btn" href="/nearby/" aria-label="내주변">{PIN_ICON}</a>
 </nav>
 <dialog id="route-dialog" class="route-dialog">
@@ -1113,9 +1129,14 @@ def alt_for(shop, filename, index, total):
 
 
 LOGO = (
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">'
-    '<circle cx="16" cy="16" r="12" fill="none" stroke="#ffd700" stroke-width="3"/>'
-    '<circle cx="16" cy="16" r="5.5" fill="none" stroke="#ffd700" stroke-width="3"/></svg>'
+    '<svg class="cupid" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 32" width="30" height="28" aria-hidden="true">'
+    '<g class="cupid-arrow">'
+    '<path d="M1 25.5 L27 11" fill="none" stroke="#ffe14a" stroke-width="2.2" stroke-linecap="round"/>'
+    '<path fill="#ffe14a" d="M24.2 7.4 L33 10.6 L25.4 14.4z"/>'
+    '<path fill="#ffe14a" d="M1 23.2 L6.2 27.6 L3.4 23.8z"/>'
+    "</g>"
+    '<path class="cupid-heart" fill="#ff2d6a" d="M18 28S6 20.2 6 13.2C6 9 9.2 6 13.2 6c2.2 0 3.8 1.1 4.8 2.6C19 7.1 20.6 6 22.8 6 26.8 6 30 9 30 13.2 30 20.2 18 28 18 28z"/>'
+    "</svg>"
 )
 SEARCH_ICON = (
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">'
@@ -1390,7 +1411,7 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
 <title>{escape(title)}</title>
 <meta name="description" content="{desc}">
 <meta name="robots" content="{robots}">
-<meta name="theme-color" content="#667eea">
+<meta name="theme-color" content="#ff4d8d">
 <link rel="canonical" href="{escape(canonical)}">
 <meta property="og:locale" content="ko_KR">
 <meta property="og:site_name" content="{BRAND}">
@@ -1403,7 +1424,7 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
 <meta name="twitter:title" content="{escape(title)}">
 <meta name="twitter:description" content="{desc}">
 <link rel="icon" href="/assets/favicon.svg">
-<link rel="stylesheet" href="/assets/style.css?v=24">
+<link rel="stylesheet" href="/assets/style.css?v=25">
 {extra_head}
 {ld}
 </head>
