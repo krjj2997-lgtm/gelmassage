@@ -1391,7 +1391,7 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
 <meta name="twitter:title" content="{escape(title)}">
 <meta name="twitter:description" content="{desc}">
 <link rel="icon" href="/assets/favicon.svg">
-<link rel="stylesheet" href="/assets/style.css?v=22">
+<link rel="stylesheet" href="/assets/style.css?v=23">
 {extra_head}
 {ld}
 </head>
