@@ -463,6 +463,58 @@
   var infoBtn = document.getElementById("related-info");
   var infoDialog = document.getElementById("info-dialog");
   if (infoBtn && infoDialog) infoBtn.addEventListener("click", function () { infoDialog.showModal(); });
+  var detailTabs = document.querySelector("[data-detail-tabs]");
+  if (detailTabs) {
+    var tabButtons = detailTabs.querySelectorAll("[data-tab-target]");
+    var tabLock = false;
+    function tabSection(button) {
+      return document.getElementById(button.getAttribute("data-tab-target"));
+    }
+    function markTab(button) {
+      for (var n = 0; n < tabButtons.length; n++) {
+        tabButtons[n].classList.toggle("is-active", tabButtons[n] === button);
+      }
+    }
+    detailTabs.addEventListener("click", function (event) {
+      var button = event.target.closest("[data-tab-target]");
+      if (!button) return;
+      var target = tabSection(button);
+      if (!target) return;
+      markTab(button);
+      tabLock = true;
+      var header = document.querySelector(".header");
+      var offset = (header ? header.offsetHeight : 0) + detailTabs.offsetHeight + 8;
+      var top = target.getBoundingClientRect().top + window.scrollY - offset;
+      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+      setTimeout(function () { tabLock = false; syncTabs(); }, 800);
+    });
+    var syncTabs = function () {
+      if (tabLock || !tabButtons.length) return;
+      var header = document.querySelector(".header");
+      var line = (header ? header.offsetHeight : 0) + detailTabs.offsetHeight + 16;
+      var current = tabButtons[0];
+      for (var i = 0; i < tabButtons.length; i++) {
+        var section = tabSection(tabButtons[i]);
+        if (section && section.getBoundingClientRect().top <= line) current = tabButtons[i];
+      }
+      var maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      if (window.scrollY >= maxScroll - 4) {
+        for (var j = tabButtons.length - 1; j >= 0; j--) {
+          var box = tabSection(tabButtons[j]);
+          if (!box) continue;
+          var rect = box.getBoundingClientRect();
+          if (rect.bottom > line && rect.top < window.innerHeight) {
+            current = tabButtons[j];
+            break;
+          }
+        }
+      }
+      markTab(current);
+    };
+    window.addEventListener("scroll", syncTabs, { passive: true });
+    syncTabs();
+  }
+
   var routeBtn = document.getElementById("open-route");
   var routeDialog = document.getElementById("route-dialog");
   if (routeBtn && routeDialog) {

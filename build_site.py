@@ -868,10 +868,17 @@ def format_content(content, after_notice="", flags=""):
                 kinds.append("point")
             else:
                 kinds.append("text")
-    sections = []
+    buckets = {"price": [], "location": [], "intro": [], "reviews": []}
     title = ""
     blocks = []
     pending = [after_notice]
+
+    def place(name):
+        if name == "프로그램":
+            return "price"
+        if name in ("오시는길", "영업시간"):
+            return "location"
+        return "intro"
 
     def flush():
         nonlocal title
@@ -897,9 +904,11 @@ def format_content(content, after_notice="", flags=""):
             else:
                 html.append(f"<p>{escape(text)}</p>")
         dump_rates()
-        sections.append(f'<section class="story">{heading}<div class="story-body">{"".join(html)}</div></section>')
+        extra = " story-price" if title == "프로그램" else ""
+        section = f'<section class="story{extra}">{heading}<div class="story-body">{"".join(html)}</div></section>'
+        buckets[place(title)].append(section)
         if title == "공지안내" and pending[0]:
-            sections.append(pending[0])
+            buckets["reviews"].append(pending[0])
             pending[0] = ""
 
     for text, kind in zip(raw_lines, kinds):
@@ -911,8 +920,32 @@ def format_content(content, after_notice="", flags=""):
         blocks.append((kind, text))
     flush()
     if pending[0]:
-        sections.append(pending[0])
-    return "\n".join(sections)
+        buckets["reviews"].append(pending[0])
+    labels = (
+        ("price", "sectionPrice", "가격"),
+        ("location", "sectionLocation", "위치"),
+        ("intro", "sectionIntro", "업체소개"),
+        ("reviews", "sectionReviews", "후기"),
+    )
+    buttons = []
+    panels = []
+    first = True
+    for key, anchor, label in labels:
+        if not buckets[key]:
+            continue
+        active = " is-active" if first else ""
+        first = False
+        buttons.append(
+            f'<button type="button" class="detail-tab{active}" data-tab-target="{anchor}">{label}</button>'
+        )
+        panels.append(f'<div id="{anchor}" class="detail-panel">{"".join(buckets[key])}</div>')
+    if not buttons:
+        return ""
+    nav = (
+        '<nav class="detail-tabs" data-detail-tabs aria-label="상세 메뉴">'
+        f'<div class="detail-tabs-inner">{"".join(buttons)}</div></nav>'
+    )
+    return nav + "\n" + "\n".join(panels)
 
 
 def tel_href(phone):
@@ -1358,7 +1391,7 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
 <meta name="twitter:title" content="{escape(title)}">
 <meta name="twitter:description" content="{desc}">
 <link rel="icon" href="/assets/favicon.svg">
-<link rel="stylesheet" href="/assets/style.css?v=21">
+<link rel="stylesheet" href="/assets/style.css?v=22">
 {extra_head}
 {ld}
 </head>
@@ -1384,7 +1417,7 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
   </div>
 </footer>
 {listing_seo_script() if page in ("region", "all") else ""}
-<script src="/assets/site.js?v=22" defer></script>
+<script src="/assets/site.js?v=23" defer></script>
 </body>
 </html>
 """
