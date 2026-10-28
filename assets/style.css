@@ -23,7 +23,7 @@
 html, body { margin: 0; padding: 0; }
 body {
   font-family: "GmarketSans", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-  background: #f3eee6;
+  background: #fff1f6;
   color: #3d342c;
   font-size: 15px;
   line-height: 1.75;
@@ -41,7 +41,7 @@ img { max-width: 100%; display: block; }
 }
 .skip:focus { left: 12px; top: 12px; }
 .header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #ff4b8b 0%, #d63a86 100%);
   color: #fff;
   position: sticky;
   top: 0;
@@ -66,6 +66,25 @@ img { max-width: 100%; display: block; }
   display: flex;
   align-items: center;
   gap: 8px;
+}
+.cupid { overflow: visible; display: block; flex: 0 0 auto; }
+.cupid-heart { transform-origin: 18px 16px; animation: cupid-heart 1.5s ease-in-out infinite; }
+.cupid-arrow { transform-origin: 16px 18px; animation: cupid-arrow 1.5s ease-in-out infinite; }
+@keyframes cupid-heart {
+  0%, 34% { transform: scale(1); }
+  48% { transform: scale(1.18); }
+  58% { transform: scale(.9) rotate(-8deg); }
+  74% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+@keyframes cupid-arrow {
+  0% { transform: translate(-14px, 8px); opacity: 0; }
+  18% { opacity: 1; }
+  50% { transform: translate(0, 0); opacity: 1; }
+  100% { transform: translate(0, 0); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cupid-heart, .cupid-arrow { animation: none; }
 }
 .header-tools { display: flex; align-items: center; gap: 8px; }
 .icon-btn {
@@ -814,7 +833,7 @@ button.map-label.is-selected { border-color: #c46a58; box-shadow: 0 0 0 3px rgba
   background: linear-gradient(135deg, #c46a58 0%, #e0b1a2 100%);
   box-shadow: 0 10px 22px rgba(196, 106, 88, .28);
 }
-body[data-page="shop"] { padding-bottom: 78px; background: #fff; }
+body[data-page="shop"] { padding-bottom: 78px; background: #fff1f6; }
 .detail-actions {
   position: fixed;
   left: 50%;
@@ -835,20 +854,22 @@ body[data-page="shop"] { padding-bottom: 78px; background: #fff; }
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   min-height: 44px;
   border: 0;
   border-radius: 12px;
-  background: #667eea;
+  background: #ff4d8d;
   color: #fff;
   font: inherit;
   font-size: .95rem;
   font-weight: 700;
   text-decoration: none;
   cursor: pointer;
+  box-shadow: 0 6px 16px rgba(255, 77, 141, .35);
 }
-.detail-action:disabled { background: #d9d3ea; color: #fff; cursor: default; }
+.detail-action:disabled { background: #f3b3c9; color: #fff; cursor: default; }
 .detail-actions .icon-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #ff4d8d;
   border-color: transparent;
   color: #fff;
 }
@@ -1155,11 +1176,20 @@ body[data-page="shop"] .prose {
   border-bottom: 1px solid #f0e7de;
 }
 .rate-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   color: #1c1c1c;
   font-size: 1rem;
   font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1.35;
+}
+.rate-time::before,
+.story-staff .story-body p::before {
+  content: "♥";
+  color: #ff2d6a;
+  font-weight: 700;
 }
 .rate-pay {
   display: flex;
@@ -1232,7 +1262,7 @@ body[data-page="shop"] .prose {
 }
 .faq summary { cursor: pointer; font-weight: 700; }
 @media (min-width: 860px) {
-  body { background: #e7e0d6; }
+  body { background: #fff1f6; }
   .header-content, .finder, .filter-section, .main-content, .foot-inner, .auth-wrap {
     max-width: 520px;
   }
