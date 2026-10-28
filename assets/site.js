@@ -515,6 +515,108 @@
     syncTabs();
   }
 
+  var copyBtn = document.querySelector(".shop-copy");
+  if (copyBtn) copyBtn.addEventListener("click", function () {
+    var text = copyBtn.getAttribute("data-copy") || "";
+    var done = function () {
+      var prev = copyBtn.textContent;
+      copyBtn.textContent = "복사됨";
+      setTimeout(function () { copyBtn.textContent = prev; }, 1200);
+    };
+    var fallback = function () {
+      var input = document.createElement("textarea");
+      input.value = text;
+      document.body.appendChild(input);
+      input.select();
+      try { document.execCommand("copy"); done(); } catch (error) {}
+      input.remove();
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(fallback);
+    } else fallback();
+  });
+
+  var shopCanvas = document.getElementById("shop-map-canvas");
+  if (shopCanvas) {
+    var shopLat = Number(shopCanvas.getAttribute("data-lat"));
+    var shopLng = Number(shopCanvas.getAttribute("data-lng"));
+    function loadScript(src) {
+      return new Promise(function (resolve, reject) {
+        var found = document.querySelector('script[src="' + src + '"]');
+        if (found) {
+          if (found.getAttribute("data-loaded") === "1") resolve();
+          else found.addEventListener("load", function () { resolve(); });
+          return;
+        }
+        var script = document.createElement("script");
+        script.src = src;
+        script.onload = function () {
+          script.setAttribute("data-loaded", "1");
+          resolve();
+        };
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    }
+    function shopPin() {
+      var node = document.createElement("div");
+      node.className = "shop-pin";
+      return node;
+    }
+    function bootShopLeaflet() {
+      var css = document.createElement("link");
+      css.rel = "stylesheet";
+      css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+      document.head.appendChild(css);
+      return loadScript("https://unpkg.com/leaflet@1.9.4/dist/leaflet.js").then(function () {
+        var map = L.map(shopCanvas, { scrollWheelZoom: false, zoomControl: false }).setView([shopLat, shopLng], 16);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 18,
+          attribution: "&copy; OpenStreetMap"
+        }).addTo(map);
+        var icon = L.divIcon({
+          className: "shop-pin-wrap",
+          html: '<div class="shop-pin"></div>',
+          iconSize: [34, 34],
+          iconAnchor: [17, 17]
+        });
+        L.marker([shopLat, shopLng], { icon: icon }).addTo(map);
+        setTimeout(function () { map.invalidateSize(); }, 250);
+      });
+    }
+    var kakaoSrc = "https://dapi.kakao.com/v2/maps/sdk.js?appkey=" + encodeURIComponent("d3b29db8ca0f290af256da095202aa77") + "&autoload=false";
+    loadScript(kakaoSrc).then(function () {
+      return new Promise(function (resolve, reject) {
+        if (!window.kakao || !kakao.maps || !kakao.maps.load) {
+          reject(new Error("kakao"));
+          return;
+        }
+        var timer = setTimeout(function () { reject(new Error("kakao timeout")); }, 4000);
+        kakao.maps.load(function () {
+          clearTimeout(timer);
+          try {
+            var map = new kakao.maps.Map(shopCanvas, {
+              center: new kakao.maps.LatLng(shopLat, shopLng),
+              level: 3,
+              scrollwheel: false
+            });
+            var overlay = new kakao.maps.CustomOverlay({
+              position: new kakao.maps.LatLng(shopLat, shopLng),
+              content: shopPin(),
+              xAnchor: 0.5,
+              yAnchor: 0.5
+            });
+            overlay.setMap(map);
+            setTimeout(function () { if (map.relayout) map.relayout(); }, 250);
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
+        });
+      });
+    }).catch(function () { return bootShopLeaflet(); });
+  }
+
   var routeBtn = document.getElementById("open-route");
   var routeDialog = document.getElementById("route-dialog");
   if (routeBtn && routeDialog) {
