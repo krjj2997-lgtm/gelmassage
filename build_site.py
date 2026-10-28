@@ -847,7 +847,7 @@ def review_section(shop):
     return f'<section class="story reviews"><h2>후기</h2><div class="story-body">{items}</div></section>'
 
 
-def format_content(content, after_notice="", flags=""):
+def format_content(content, after_notice="", flags="", map_html=""):
     raw_lines = []
     for raw in (content or "").split("\n"):
         text = raw.strip()
@@ -921,6 +921,18 @@ def format_content(content, after_notice="", flags=""):
     flush()
     if pending[0]:
         buckets["reviews"].append(pending[0])
+    if map_html:
+        intro = buckets["intro"]
+        staff = next((i for i, html in enumerate(intro) if "<h2>관리사님" in html), None)
+        notice = next((i for i, html in enumerate(intro) if "<h2>공지안내" in html), None)
+        if staff is not None and notice is not None:
+            intro.insert(notice if staff < notice else staff, map_html)
+        elif staff is not None:
+            intro.insert(staff + 1, map_html)
+        elif notice is not None:
+            intro.insert(notice, map_html)
+        else:
+            intro.append(map_html)
     labels = (
         ("price", "sectionPrice", "가격"),
         ("location", "sectionLocation", "위치"),
@@ -1391,7 +1403,7 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
 <meta name="twitter:title" content="{escape(title)}">
 <meta name="twitter:description" content="{desc}">
 <link rel="icon" href="/assets/favicon.svg">
-<link rel="stylesheet" href="/assets/style.css?v=23">
+<link rel="stylesheet" href="/assets/style.css?v=24">
 {extra_head}
 {ld}
 </head>
@@ -1417,7 +1429,7 @@ def page_shell(title, description, canonical, body, json_ld=None, robots="index,
   </div>
 </footer>
 {listing_seo_script() if page in ("region", "all") else ""}
-<script src="/assets/site.js?v=23" defer></script>
+<script src="/assets/site.js?v=24" defer></script>
 </body>
 </html>
 """
@@ -1891,6 +1903,73 @@ def render_all(shops):
     write(os.path.join(OUT, "all", "index.html"), html)
 
 
+def direction_lines(shop):
+    found = []
+    seen = set()
+
+    def add(line):
+        text = re.sub(r"\s+", " ", line or "").strip(" ·")
+        if not text or text in seen or not re.search(r"도보|출구", text):
+            return
+        seen.add(text)
+        found.append(text)
+
+    for line in address_lines(shop.get("address") or ""):
+        add(line)
+    if found:
+        return found
+    in_way = False
+    for raw in (shop.get("content") or "").split("\n"):
+        text = raw.strip()
+        if not text:
+            continue
+        heading = heading_of(text)
+        if heading == "오시는길":
+            in_way = True
+            continue
+        if heading and in_way:
+            break
+        if in_way:
+            add(text)
+    return found
+
+
+def shop_map_html(shop):
+    point = listing_point(shop)
+    address = (map_address(shop) or "").strip()
+    if not address:
+        lines = address_lines(shop.get("address") or "")
+        address = next((line for line in lines if not re.search(r"도보|출구", line)), "")
+    ways = direction_lines(shop)
+    if not point and not address and not ways:
+        return ""
+    canvas = ""
+    if point:
+        canvas = (
+            f'<div id="shop-map-canvas" class="shop-map-canvas" role="region" aria-label="매장 위치 지도" '
+            f'data-lat="{point[0]}" data-lng="{point[1]}"></div>'
+        )
+    addr_html = ""
+    if address:
+        pin = (
+            '<svg class="shop-addr-pin" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">'
+            '<path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/>'
+            "</svg>"
+        )
+        addr_html = (
+            f'<p class="shop-addr">{pin}<span>{escape(address)}</span></p>'
+            f'<button type="button" class="shop-copy" data-copy="{escape(address)}">주소복사</button>'
+        )
+    way_html = ""
+    if ways:
+        items = "".join(f"<li>{escape(line)}</li>" for line in ways)
+        way_html = f'<div class="shop-way"><p class="shop-way-title">찾아오시는길</p><ul>{items}</ul></div>'
+    return (
+        '<section class="story shop-map"><h2>매장위치</h2>'
+        f'<div class="story-body">{canvas}{addr_html}{way_html}</div></section>'
+    )
+
+
 def render_shop(shop):
     images = shop["images"]
     if images:
@@ -1968,7 +2047,7 @@ def render_shop(shop):
     {call}
   </section>
   {gallery}
-  <article class="prose">{format_content(shop["content"], review_section(shop), flag_html(shop.get("nations")))}</article>
+  <article class="prose">{format_content(shop["content"], review_section(shop), flag_html(shop.get("nations")), shop_map_html(shop))}</article>
   {near_section(shop)}
   {detail_actions(shop)}
 </main>"""

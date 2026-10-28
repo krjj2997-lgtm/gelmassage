@@ -1013,6 +1013,84 @@ body[data-page="shop"] .prose {
   border-radius: 16px;
 }
 .story-price .rate { padding: 13px 2px; }
+.shop-map-canvas {
+  height: 210px;
+  margin: 0 0 14px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #eef1f4;
+}
+.shop-pin-wrap { background: none !important; border: 0 !important; }
+.shop-pin {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #ff4d6d;
+  border: 3px solid #fff;
+  box-shadow: 0 6px 14px rgba(255, 77, 109, .4);
+  position: relative;
+}
+.shop-pin::before {
+  content: "";
+  position: absolute;
+  left: 9px;
+  top: 7px;
+  width: 10px;
+  height: 7px;
+  border: 2px solid #fff;
+  border-bottom: 0;
+  border-radius: 6px 6px 0 0;
+}
+.shop-pin::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 15px;
+  width: 14px;
+  height: 9px;
+  background: #fff;
+  border-radius: 1px;
+}
+.shop-map .shop-addr {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0 0 10px;
+  color: #111;
+  font-size: .95rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+.shop-addr-pin { flex: 0 0 18px; margin-top: 2px; color: #111; }
+.shop-copy {
+  display: block;
+  width: 100%;
+  min-height: 46px;
+  margin: 0 0 16px;
+  border: 0;
+  border-radius: 12px;
+  background: #f3f4f6;
+  color: #111;
+  font: inherit;
+  font-size: .95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.shop-map .shop-way-title {
+  margin: 0 0 6px;
+  color: #111;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+.shop-map .shop-way ul { margin: 0 0 8px; padding-left: 18px; }
+.shop-map .shop-way li {
+  margin: 0 0 4px;
+  color: #111;
+  font-size: .95rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
 .story {
   margin-top: 14px;
   background: #fffdfb;
@@ -1032,6 +1110,7 @@ body[data-page="shop"] .prose {
   align-items: center;
   gap: 8px;
 }
+.story.shop-map h2 { color: #111; }
 .story.reviews .story-body p {
   margin: 0 0 10px;
   padding: 10px 12px;
