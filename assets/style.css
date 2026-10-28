@@ -814,7 +814,7 @@ button.map-label.is-selected { border-color: #c46a58; box-shadow: 0 0 0 3px rgba
   background: linear-gradient(135deg, #c46a58 0%, #e0b1a2 100%);
   box-shadow: 0 10px 22px rgba(196, 106, 88, .28);
 }
-body[data-page="shop"] { padding-bottom: 78px; }
+body[data-page="shop"] { padding-bottom: 78px; background: #fff; }
 .detail-actions {
   position: fixed;
   left: 50%;
@@ -968,6 +968,14 @@ body[data-page="shop"] { padding-bottom: 78px; }
 .near-card small { color: #6b7280; font-size: .78rem; font-weight: 500; }
 .near-card b { color: #c46a58; font-size: .9rem; }
 .prose { margin-top: 4px; background: transparent; padding: 0; }
+body[data-page="shop"] .detail,
+body[data-page="shop"] .detail-card,
+body[data-page="shop"] .story,
+body[data-page="shop"] .near-card,
+body[data-page="shop"] .detail-tabs,
+body[data-page="shop"] .prose {
+  background: #fff;
+}
 .detail-tabs {
   position: sticky;
   top: 64px;
@@ -1049,6 +1057,11 @@ body[data-page="shop"] { padding-bottom: 78px; }
   font-weight: 700;
   letter-spacing: -0.04em;
   line-height: 1.35;
+}
+.story-price .story-body p.point {
+  padding: 10px 12px;
+  background: #f3f4f6;
+  border-radius: 10px;
 }
 .rate-list {
   margin: 4px 0 12px;
